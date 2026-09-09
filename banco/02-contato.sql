@@ -20,18 +20,36 @@
 --      Meta Business — levando junto os clientes comerciais que estiverem lá.
 --
 --   2. A Justiça Eleitoral veda o disparo em massa de conteúdo
---      político-eleitoral em aplicativo de mensagem (Res. TSE 23.610/2019 e
---      alterações). Mesmo que a Meta liberasse, disparar em lote para a base
---      de apoiadores seria ilícito eleitoral. A mesma norma proíbe ceder,
+--      político-eleitoral (Res. TSE 23.610/2019, art. 34, II). São DUAS
+--      vedações ligadas por "ou": sem consentimento da destinatária, OU com
+--      ferramenta fora dos termos do provedor. A mesma norma proíbe ceder,
 --      doar ou vender cadastro eletrônico a candidato, partido ou coligação.
+--
+--  ⚠️ E AS DUAS SÃO INDEPENDENTES — a confusão que custa caro
+--  --------------------------------------------------------
+--  O aplicativo WhatsApp Business (o da lojinha) É liberado pela Meta para
+--  político. Isso resolve o item 1, e SÓ ele. A definição legal de disparo em
+--  massa é NEUTRA quanto à tecnologia (art. 37, XXI: "um mesmo conteúdo, ou
+--  variações deste, para um grande volume de usuárias e usuários por meio de
+--  aplicativos de mensagem instantânea" — não diz "via API"). Ou seja:
+--  LISTA DE TRANSMISSÃO DO APP GRÁTIS PARA CENTENAS DE ELEITORES CONTINUA
+--  SENDO DISPARO EM MASSA. E não adianta alegar que a lista "só entrega a quem
+--  salvou o número": salvar contato é ato unilateral de quem recebe, e o
+--  art. 37, XXVII exige "manifestação livre, informada e inequívoca".
 --
 --  O QUE ESTE ARQUIVO SUSTENTA, ENTÃO
 --  ----------------------------------
---  O caminho permitido: a pessoa fala primeiro (link wa.me no site), a equipe
---  responde UMA A UMA pelo aplicativo WhatsApp Business (que é liberado para
---  político — a vedação é da Plataforma/API), e o banco guarda a prova de
---  consentimento, quem já foi contatado e quem pediu para sair.
---  Automação continua existindo — só não é ela que fala com o eleitor.
+--  O porto seguro expresso do art. 33, §2º: mensagem CONSENTIDA, enviada por
+--  PESSOA NATURAL, de forma PRIVADA. Na prática: a pessoa fala primeiro (link
+--  wa.me no site), a equipe responde UMA A UMA pelo aplicativo, e o banco
+--  guarda a prova de consentimento, quem já foi contatado e quem pediu para
+--  sair. Automação continua existindo — só não é ela que fala com o eleitor.
+--
+--  E quem pedir para sair tem que ser atendido em 48 HORAS, com descadastro
+--  E eliminação dos dados (art. 33, caput). Depois do prazo, multa de R$ 100
+--  POR MENSAGEM (art. 33, §1º; Lei 9.504/97, art. 57-G, parágrafo único).
+--  Por isso a função descadastrar() abaixo atende na hora, não em 48h: a
+--  única prova boa é a que não depende de alguém lembrar.
 -- ============================================================================
 
 

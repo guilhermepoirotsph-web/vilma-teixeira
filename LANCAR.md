@@ -220,6 +220,33 @@ antiga: <https://developers.facebook.com/tools/debug/>.
 
 ---
 
+## A regra do WhatsApp, para você repassar à Mariana e ao Lucas
+
+Uma linha, e ela evita o problema inteiro:
+
+> **Conversa individual com quem se cadastrou no site, sim.
+> Lista de transmissão, não — nem pelo aplicativo.**
+
+O porquê, se alguém perguntar: são **duas regras diferentes, de duas
+autoridades diferentes**. A Meta proíbe a *Plataforma/API* em campanha política
+— e o aplicativo WhatsApp Business é liberado, isso é verdade. Mas a Justiça
+Eleitoral proíbe **disparo em massa**, e a definição legal é neutra quanto à
+tecnologia (Res. TSE 23.610/2019, art. 37, XXI: *"um mesmo conteúdo, ou
+variações deste, para um grande volume de usuárias e usuários por meio de
+aplicativos de mensagem instantânea"* — não diz "via API"). Usar o app
+permitido resolve só a primeira regra.
+
+E não vale o argumento de que a lista de transmissão "já filtra sozinha" porque
+só entrega a quem salvou o número: salvar contato é ato de quem recebe, e a
+norma exige *"manifestação livre, informada e inequívoca"* (art. 37, XXVII).
+
+**Se alguém responder SAIR:** 48 horas para descadastrar **e apagar os dados**,
+sob multa de **R$ 100 por mensagem** enviada depois (art. 33, §1º). Marque na
+hora no painel — ou mande a pessoa em `vilmateixeira.com/privacidade.html#descadastrar`,
+que resolve sozinha.
+
+---
+
 ## Antes do dia 4 de outubro
 
 **Publicar conteúdo novo no dia da eleição é crime**, não multa (Lei 9.504/97,

@@ -33,11 +33,52 @@ veda.
 
 A pessoa fala primeiro (link `wa.me` no site), a equipe responde **uma a uma**
 pelo aplicativo WhatsApp Business — que é liberado para político, porque a
-vedação é da *Plataforma/API*, não do aplicativo. O banco guarda a prova de
-consentimento, quem já foi contatado e quem pediu para sair.
+vedação da Meta é da *Plataforma/API*, não do aplicativo. O banco guarda a
+prova de consentimento, quem já foi contatado e quem pediu para sair.
 
 O n8n avisa, prepara o texto e monta o link. **Quem aperta o botão é uma
 pessoa.**
+
+### ⚠️ A armadilha: o app ser permitido NÃO libera lista de transmissão
+
+Esta é a confusão que qualquer pessoa da equipe vai fazer, e ela custa caro.
+São **duas regras diferentes**, de **duas autoridades diferentes**:
+
+| | O que proíbe | Quem manda |
+|---|---|---|
+| **Plataforma/API** | usar a Cloud API em campanha política | **Meta** (política de uso) |
+| **Disparo em massa** | mandar o mesmo conteúdo para muita gente sem consentimento | **Justiça Eleitoral** (lei) |
+
+Usar o aplicativo permitido resolve **só a primeira**. A definição legal de
+disparo em massa é **neutra quanto à tecnologia** — Res. TSE 23.610/2019,
+art. 37, XXI: *"envio, compartilhamento ou encaminhamento de um mesmo conteúdo,
+ou de variações deste, para um grande volume de usuárias e usuários por meio de
+aplicativos de mensagem instantânea"*. Não diz "via API". **Lista de transmissão
+do app grátis para centenas de eleitores é disparo em massa**, e o art. 34, II
+tem duas vedações ligadas por "ou": sem consentimento **ou** com ferramenta
+fora dos termos do provedor. O app resolve a segunda; a primeira continua de pé.
+
+E não vale dizer que a lista de transmissão "já filtra" porque só entrega a quem
+salvou o número: **salvar um contato é ato unilateral de quem recebe**, e o
+art. 37, XXVII exige *"manifestação livre, informada e inequívoca"*. Limitação
+técnica do WhatsApp não é base legal.
+
+**A regra prática para a Mariana e o Lucas, em uma linha:**
+> conversa individual com quem se cadastrou no site, sim. Lista de transmissão,
+> não — nem no aplicativo.
+
+O porto seguro expresso é o art. 33, §2º: mensagem **consentida**, enviada por
+**pessoa natural**, de forma **privada** ou em grupo restrito, fica fora das
+normas de propaganda eleitoral. É exatamente o desenho montado aqui.
+
+### E se alguém responder "SAIR"
+
+O art. 33 dá **48 horas** para descadastrar **e eliminar os dados**, com multa
+de **R$ 100 por mensagem** enviada depois do prazo (art. 33, §1º; Lei 9.504/97,
+art. 57-G, parágrafo único). Não espere as 48h: a assessora marca `optout` no
+painel na hora, ou a própria pessoa resolve sozinha em
+`privacidade.html#descadastrar`. O opt-out vale para os dois formatos do
+número — isso está provado no banco.
 
 ## Os fluxos
 
