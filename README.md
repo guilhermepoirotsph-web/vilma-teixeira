@@ -6,10 +6,14 @@ candidaturas de **Regina Nunes — 15115** (Deputada Estadual) e
 
 Domínio: **www.vilmateixeira.com** · Feito por [GD Studio X](https://github.com/guilhermepoirotsph-web)
 
-> 📖 **O manual completo está em [LEIA-ME.md](LEIA-ME.md)** — o que está pronto,
-> o que falta, e o passo a passo de cada pendência.
+> 🚀 **Para colocar no ar: [LANCAR.md](LANCAR.md)** — os quatro blocos do que só
+> quem tem as contas pode fazer (GitHub, Supabase, n8n, domínio).
+> 📖 **O manual do projeto está em [LEIA-ME.md](LEIA-ME.md)** — o que está pronto,
+> o que falta, e as decisões tomadas.
 > 🗂️ **Os fatos do site têm procedência em [docs/DADOS.md](docs/DADOS.md)**, que é a
 > fonte única de verdade. Nada no site é afirmado sem estar lá.
+> 🤖 **As automações estão em [n8n/LEIA-ME.md](n8n/LEIA-ME.md)** — e nenhuma delas
+> manda mensagem para eleitor. O porquê está lá, com a citação da política da Meta.
 
 ---
 
@@ -47,15 +51,16 @@ do formulário e dos painéis.
 
 ## Provas
 
-Nada é dado como pronto sem prova que roda. **158 no total**, e elas rodam
+Nada é dado como pronto sem prova que roda. **249 no total**, e elas rodam
 sozinhas na Action antes de qualquer publicação:
 
 | Bateria | Quantas | O que garante |
 |---|---|---|
-| `npm run provar:banco` | 47 | RLS, papéis, consentimento LGPD, anti-takeover — em Postgres real (PGlite) |
+| `npm run provar:banco` | 95 | RLS, papéis, consentimento LGPD, anti-takeover, opt-out, isolamento do robô do n8n — em Postgres real (PGlite) |
 | `npm run provar:site` | 44 | urna, formulário, agenda, herói, scroll, WhatsApp do gabinete nunca vaza |
 | `npm run provar:painel` | 37 | os dois painéis com login de verdade; cada papel só baixa o que pode ver |
-| `npm run provar:publicacao` | 30 | o pacote leva o certo, e a rede contra segredo é testada com chave plantada |
+| `npm run provar:publicacao` | 38 | o pacote leva o certo; a rede contra segredo e a varredura de contato do gabinete são testadas com dado plantado |
+| `npm run provar:n8n` | 35 | os fluxos colam no canvas, e nenhum manda mensagem para eleitor |
 
 As provas de painel precisam do banco falso e do servidor de prévia no ar:
 

@@ -37,7 +37,7 @@ await db.exec(`
 `);
 
 /* os dois arquivos, na mesma ordem em que vão ser colados no SQL Editor */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql'])
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql'])
   await db.exec(await readFile(join(RAIZ, 'banco', arq), 'utf8'));
 await db.exec(`
   alter table public.perfis        force row level security;

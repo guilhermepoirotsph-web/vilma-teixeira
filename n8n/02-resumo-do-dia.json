@@ -1,0 +1,104 @@
+{
+  "name": "VILMA — 02 · Resumo do dia para a equipe",
+  "nodes": [
+    {
+      "id": "rs-cron",
+      "name": "Todo dia 18:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "days", "triggerAtHour": 18, "triggerAtMinute": 0 }] }
+      },
+      "notes": "Fim da tarde: dá tempo de a Mariana falar com quem se cadastrou hoje e de conferir a agenda de amanhã antes de encerrar."
+    },
+    {
+      "id": "rs-ler",
+      "name": "Pega o resumo no banco",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.resumo_do_dia(1) as r;",
+        "options": {}
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } },
+      "notes": "Uma chamada só. A regra de quem pode ser contatado mora no banco (view apoiadores_contactaveis), não aqui — assim o opt-out vale mesmo que alguém edite este fluxo."
+    },
+    {
+      "id": "rs-tem",
+      "name": "Tem algo para contar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+          "combinator": "or",
+          "conditions": [
+            {
+              "operator": { "type": "number", "operation": "gt" },
+              "leftValue": "={{ $json.r.agenda.length }}",
+              "rightValue": 0
+            },
+            {
+              "operator": { "type": "number", "operation": "gt" },
+              "leftValue": "={{ $json.r.novos_apoiadores.length }}",
+              "rightValue": 0
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "Sem isto, a equipe recebe um e-mail vazio todo dia e para de abrir — e no dia que importa ninguém lê."
+    },
+    {
+      "id": "rs-montar",
+      "name": "Monta o texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, -80],
+      "parameters": {
+        "jsCode": "const r = $input.first().json.r;\nconst hora = s => new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });\n\nconst agenda = r.agenda.length\n  ? r.agenda.map(e => `  ${hora(e.inicio)}  ${e.titulo}` +\n      (e.local ? ` — ${e.local}` : '') +\n      (e.bairro ? ` (${e.bairro})` : '') +\n      `   [${e.onde}]`).join('\\n')\n  : '  (nada marcado)';\n\n// O link vem PRONTO para a Mariana clicar. Quem manda a mensagem é ela, uma\n// conversa por vez: a Plataforma WhatsApp Business proíbe campanha política e\n// a lei eleitoral veda disparo em massa. Este fluxo é copiloto, não remetente.\nconst gente = r.novos_apoiadores.length\n  ? r.novos_apoiadores.map(p => `  ${p.nome} — ${p.bairro}\\n    ${p.link}` +\n      (p.ajuda && p.ajuda.length ? `\\n    quer ajudar com: ${p.ajuda.join(', ')}` : '') +\n      (p.recado ? `\\n    recado: \"${p.recado}\"` : '')).join('\\n\\n')\n  : '  (ninguém novo)';\n\nconst texto = [\n  'AGENDA DE AMANHÃ',\n  agenda,\n  '',\n  `QUEM SE CADASTROU E AINDA NÃO FOI CONTATADO (${r.a_contatar} no total)`,\n  gente,\n  '',\n  r.sairam_7d ? `${r.sairam_7d} pessoa(s) pediram para sair nos últimos 7 dias — já estão fora da lista.` : '',\n  '',\n  'Clique no link de cada pessoa e fale com ela pelo WhatsApp Business, uma por vez.',\n  'Depois de falar, marque no painel para ela sair desta lista.',\n].filter(Boolean).join('\\n');\n\nreturn [{ json: { texto, assunto: `[Vilma] amanhã: ${r.agenda.length} compromisso(s) · ${r.novos_apoiadores.length} pessoa(s) para chamar` } }];"
+      }
+    },
+    {
+      "id": "rs-email",
+      "name": "Manda para a equipe",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [960, -80],
+      "parameters": {
+        "fromEmail": "automacao@gdstudiox.com.br",
+        "toEmail": "SUBSTITUIR-EMAIL-DA-MARIANA",
+        "subject": "={{ $json.assunto }}",
+        "emailFormat": "text",
+        "text": "={{ $json.texto }}",
+        "options": {}
+      },
+      "credentials": { "smtp": { "id": "SUBSTITUIR", "name": "SMTP GD Studio" } }
+    },
+    {
+      "id": "rs-log",
+      "name": "Registra no log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1200, -80],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log('02-resumo','info',$1) as id;",
+        "options": { "queryReplacement": "={{ $('Monta o texto').item.json.assunto }}" }
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } }
+    }
+  ],
+  "connections": {
+    "Todo dia 18:00": { "main": [[{ "node": "Pega o resumo no banco", "type": "main", "index": 0 }]] },
+    "Pega o resumo no banco": { "main": [[{ "node": "Tem algo para contar?", "type": "main", "index": 0 }]] },
+    "Tem algo para contar?": { "main": [[{ "node": "Monta o texto", "type": "main", "index": 0 }], []] },
+    "Monta o texto": { "main": [[{ "node": "Manda para a equipe", "type": "main", "index": 0 }]] },
+    "Manda para a equipe": { "main": [[{ "node": "Registra no log", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS" }
+}

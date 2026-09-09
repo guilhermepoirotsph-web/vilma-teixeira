@@ -53,6 +53,10 @@ jobs:
       - name: Provas da publicação (pacote e rede de segredo)
         run: node ferramentas/provar-publicacao.mjs
 
+      # inclui a trava que impede um fluxo de mandar WhatsApp para eleitor
+      - name: Provas dos fluxos do n8n
+        run: node ferramentas/provar-n8n.mjs
+
   publicar:
     name: Publicar no Pages
     needs: provar

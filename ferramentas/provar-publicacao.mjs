@@ -40,8 +40,9 @@ const publicar = args => {
   }
 
   /* o que jamais pode ser servido por URL */
-  for (const p of ['banco', 'docs', 'ferramentas', 'caps', 'montar.mjs',
+  for (const p of ['banco', 'docs', 'ferramentas', 'caps', 'n8n', 'montar.mjs',
                    'preview-server.mjs', 'publicar.mjs', 'LEIA-ME.md',
+                   '.github', 'virar-dominio.mjs', 'partes',
                    'painel/config.local.js', 'assets/js/config.local.js',
                    'fotos/_pagina-vilma.html', 'fotos/_referencia-vilma-camara.jpg',
                    'fotos/_cezinha-camara-referencia.jpg']) {

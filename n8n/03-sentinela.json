@@ -1,0 +1,108 @@
+{
+  "name": "VILMA — 03 · Sentinela do site",
+  "nodes": [
+    {
+      "id": "st-cron",
+      "name": "A cada 15 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] } },
+      "notes": "Na semana da eleição vale baixar para 5 minutos. Site fora do ar na véspera é prejuízo que não dá para recuperar depois."
+    },
+    {
+      "id": "st-site",
+      "name": "Abre o site",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0],
+      "parameters": {
+        "url": "https://www.vilmateixeira.com/",
+        "options": { "timeout": 15000, "response": { "response": { "neverError": true, "fullResponse": true } } }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "st-api",
+      "name": "Abre a agenda pública",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0],
+      "parameters": {
+        "url": "=https://SUBSTITUIR-REF.supabase.co/rest/v1/agenda_publica?select=id&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "apikey", "value": "SUBSTITUIR-CHAVE-PUBLISHABLE" }]
+        },
+        "options": { "timeout": 15000, "response": { "response": { "neverError": true, "fullResponse": true } } }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "st-julgar",
+      "name": "Está tudo de pé?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0],
+      "parameters": {
+        "jsCode": "const site = $('Abre o site').first().json;\nconst api  = $input.first().json;\nconst falhas = [];\n\n// 200 não basta: deploy quebrado devolve 200 com página vazia. A âncora é uma\n// frase que só existe se o site montou de verdade.\nconst corpo = String(site.body || '');\nif (site.statusCode !== 200) falhas.push(`site respondeu ${site.statusCode}`);\nelse if (!corpo.includes('Juntos por Caraguá')) falhas.push('site respondeu 200 mas veio sem conteúdo');\nelse if (corpo.length < 20000) falhas.push(`site veio pequeno demais (${corpo.length} bytes)`);\n\nif (api.statusCode !== 200) falhas.push(`agenda pública respondeu ${api.statusCode}`);\n\nreturn [{ json: { ok: falhas.length === 0, falhas, resumo: falhas.join(' · ') || 'tudo de pé' } }];"
+      }
+    },
+    {
+      "id": "st-if",
+      "name": "Caiu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose", "version": 2 },
+          "combinator": "and",
+          "conditions": [{
+            "operator": { "type": "boolean", "operation": "false", "singleValue": true },
+            "leftValue": "={{ $json.ok }}"
+          }]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "st-avisa",
+      "name": "Avisa o Guilherme",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1200, -80],
+      "parameters": {
+        "fromEmail": "automacao@gdstudiox.com.br",
+        "toEmail": "guilhermepoirotsph@gmail.com",
+        "subject": "=[Vilma] SITE COM PROBLEMA — {{ $json.resumo }}",
+        "emailFormat": "text",
+        "text": "=O monitor encontrou:\n\n{{ $json.falhas.join('\\n') }}\n\nConferido em https://www.vilmateixeira.com/",
+        "options": {}
+      },
+      "credentials": { "smtp": { "id": "SUBSTITUIR", "name": "SMTP GD Studio" } }
+    },
+    {
+      "id": "st-log",
+      "name": "Registra a falha",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1440, -80],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log('03-sentinela','erro',$1) as id;",
+        "options": { "queryReplacement": "={{ $('Está tudo de pé?').item.json.resumo }}" }
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } }
+    }
+  ],
+  "connections": {
+    "A cada 15 minutos": { "main": [[{ "node": "Abre o site", "type": "main", "index": 0 }]] },
+    "Abre o site": { "main": [[{ "node": "Abre a agenda pública", "type": "main", "index": 0 }]] },
+    "Abre a agenda pública": { "main": [[{ "node": "Está tudo de pé?", "type": "main", "index": 0 }]] },
+    "Está tudo de pé?": { "main": [[{ "node": "Caiu?", "type": "main", "index": 0 }]] },
+    "Caiu?": { "main": [[{ "node": "Avisa o Guilherme", "type": "main", "index": 0 }], []] },
+    "Avisa o Guilherme": { "main": [[{ "node": "Registra a falha", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS" }
+}

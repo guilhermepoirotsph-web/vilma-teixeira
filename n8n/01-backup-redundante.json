@@ -1,0 +1,50 @@
+{
+  "name": "VILMA — 01 · Backup redundante do banco",
+  "nodes": [
+    {
+      "id": "bk-cron",
+      "name": "Todo dia 04:10",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "days", "triggerAtHour": 4, "triggerAtMinute": 10 }] }
+      },
+      "notes": "10 minutos DEPOIS do pg_cron das 03:00. Este é a segunda cópia, não a primeira: se o VPS estiver fora do ar, o backup de dentro do banco já rodou."
+    },
+    {
+      "id": "bk-rodar",
+      "name": "Gera o snapshot",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.gerar_backup() as r;",
+        "options": {}
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "bk-log",
+      "name": "Registra no log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [480, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log('01-backup','info','backup redundante ok',$1::jsonb) as id;",
+        "options": { "queryReplacement": "={{ JSON.stringify($json.r) }}" }
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } }
+    }
+  ],
+  "connections": {
+    "Todo dia 04:10": { "main": [[{ "node": "Gera o snapshot", "type": "main", "index": 0 }]] },
+    "Gera o snapshot": { "main": [[{ "node": "Registra no log", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS" }
+}

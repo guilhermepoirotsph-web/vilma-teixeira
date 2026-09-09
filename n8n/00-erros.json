@@ -1,0 +1,50 @@
+{
+  "name": "VILMA — 00 · Erros",
+  "nodes": [
+    {
+      "id": "erro-trigger",
+      "name": "Quando um fluxo falha",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "erro-log",
+      "name": "Grava no log do banco",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log($1, 'erro', $2, $3::jsonb) as id;",
+        "options": {
+          "queryReplacement": "={{ $json.workflow.name }},={{ $json.execution.error.message }},={{ JSON.stringify({ no: $json.execution.lastNodeExecuted, url: $json.execution.url }) }}"
+        }
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "erro-email",
+      "name": "Avisa o Guilherme",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [480, 0],
+      "parameters": {
+        "fromEmail": "automacao@gdstudiox.com.br",
+        "toEmail": "guilhermepoirotsph@gmail.com",
+        "subject": "=[Vilma] falhou: {{ $('Quando um fluxo falha').item.json.workflow.name }}",
+        "emailFormat": "text",
+        "text": "=O fluxo {{ $('Quando um fluxo falha').item.json.workflow.name }} falhou.\n\nNó: {{ $('Quando um fluxo falha').item.json.execution.lastNodeExecuted }}\nErro: {{ $('Quando um fluxo falha').item.json.execution.error.message }}\n\nExecução: {{ $('Quando um fluxo falha').item.json.execution.url }}",
+        "options": {}
+      },
+      "credentials": { "smtp": { "id": "SUBSTITUIR", "name": "SMTP GD Studio" } }
+    }
+  ],
+  "connections": {
+    "Quando um fluxo falha": { "main": [[{ "node": "Grava no log do banco", "type": "main", "index": 0 }]] },
+    "Grava no log do banco": { "main": [[{ "node": "Avisa o Guilherme", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

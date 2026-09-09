@@ -1,0 +1,61 @@
+{
+  "name": "VILMA — 04 · Calendário eleitoral (avisa a equipe)",
+  "nodes": [
+    {
+      "id": "cal-cron",
+      "name": "Todo dia 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "days", "triggerAtHour": 8, "triggerAtMinute": 0 }] } }
+    },
+    {
+      "id": "cal-datas",
+      "name": "Que dia é hoje na campanha?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "parameters": {
+        "jsCode": "// A data é lida no fuso de Brasília: rodando em UTC, depois das 21h o servidor\n// já está no dia seguinte e o aviso do dia da eleição chegaria atrasado.\nconst hoje = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });\n\nconst AGENDA = {\n  '2026-10-01': { nivel: 'aviso', texto: 'Faltam 3 dias. Confira no DivulgaCand se os registros 15115 e 2223 continuam deferidos — o site afirma que estão.' },\n  '2026-10-02': { nivel: 'aviso', texto: 'Véspera da véspera. Combine com a Vilma o que fica publicado no domingo e quem tem o celular na mão.' },\n  '2026-10-03': { nivel: 'aviso', texto: 'VÉSPERA. A partir de amanhã NÃO se publica conteúdo novo no site nem nas redes: publicação nova no dia da eleição é CRIME (Lei 9.504/97, art. 39, §5º, III e IV). Deixe a agenda e o formulário do jeito que devem passar o domingo.' },\n  '2026-10-04': { nivel: 'erro',  texto: 'HOJE É O DIA DA ELEIÇÃO. Ninguém publica nada: nem post, nem evento na agenda, nem troca de texto no painel. Publicação nova hoje é crime, não multa. Se precisar TIRAR alguma coisa do ar, pode — tirar não é publicar.' },\n  '2026-10-05': { nivel: 'info',  texto: 'Eleição passou. Dá para voltar a publicar. Antes de qualquer coisa, converse com a Vilma sobre o que o site vira agora.' },\n};\n\nconst a = AGENDA[hoje];\nif (!a) return [];   // dia comum: o fluxo termina sem mandar nada\nreturn [{ json: { data: hoje, ...a,\n  assunto: `[Vilma] ${a.nivel === 'erro' ? 'ATENÇÃO — ' : ''}${hoje}` } }];"
+      },
+      "notes": "Datas conferidas em docs/DADOS.md §8. Se o calendário do TSE mudar, muda AQUI — é o único lugar."
+    },
+    {
+      "id": "cal-email",
+      "name": "Avisa a equipe",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [480, 0],
+      "parameters": {
+        "fromEmail": "automacao@gdstudiox.com.br",
+        "toEmail": "SUBSTITUIR-EMAIL-DA-MARIANA,SUBSTITUIR-EMAIL-DO-LUCAS,guilhermepoirotsph@gmail.com",
+        "subject": "={{ $json.assunto }}",
+        "emailFormat": "text",
+        "text": "={{ $json.texto }}\n\n(aviso automático do calendário eleitoral)",
+        "options": {}
+      },
+      "credentials": { "smtp": { "id": "SUBSTITUIR", "name": "SMTP GD Studio" } }
+    },
+    {
+      "id": "cal-log",
+      "name": "Registra no log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [720, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log('04-calendario',$1,$2) as id;",
+        "options": {
+          "queryReplacement": "={{ $('Que dia é hoje na campanha?').item.json.nivel }},={{ $('Que dia é hoje na campanha?').item.json.texto }}"
+        }
+      },
+      "credentials": { "postgres": { "id": "SUBSTITUIR", "name": "Supabase Vilma" } }
+    }
+  ],
+  "connections": {
+    "Todo dia 08:00": { "main": [[{ "node": "Que dia é hoje na campanha?", "type": "main", "index": 0 }]] },
+    "Que dia é hoje na campanha?": { "main": [[{ "node": "Avisa a equipe", "type": "main", "index": 0 }]] },
+    "Avisa a equipe": { "main": [[{ "node": "Registra no log", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS" }
+}

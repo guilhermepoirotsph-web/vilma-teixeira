@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /* ============================================================================
    provar-sql.mjs — roda banco/schema.sql inteiro num Postgres de verdade
    (PGlite, em WASM) e prova a cadeia de segurança ANTES de tocar no Supabase.
@@ -37,7 +37,7 @@ await db.exec(`
 /* ───────────────────────────── roda o schema de produção ─────────────── */
 /* Na ordem em que o Guilherme vai colar no SQL Editor. Rodar os dois aqui é
    o que garante que o segundo não conflita com o primeiro. */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql']) {
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql']) {
   const sql = await readFile(join(AQUI, arq), 'utf8');
   try { await db.exec(sql); ok(arq + ' roda inteiro sem erro'); }
   catch (e) { bad(arq + ' falhou', e.message); imprimir(); process.exit(1); }
@@ -45,7 +45,7 @@ for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql']) {
 
 /* e roda DE NOVO: migração que não é idempotente quebra na segunda mão, e a
    segunda mão sempre acontece (colou duas vezes, refez o banco, restaurou). */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql']) {
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql']) {
   const sql = await readFile(join(AQUI, arq), 'utf8');
   try { await db.exec(sql); ok(arq + ' é idempotente (roda 2× sem erro)'); }
   catch (e) { bad(arq + ' não é idempotente', String(e.message).slice(0, 120)); }
@@ -520,6 +520,61 @@ await como(u.admin, async () => {
   guardado === '5512933332222'
     ? ok('a coluna guarda sempre a forma canônica, não o que a pessoa digitou', guardado)
     : bad('número guardado em formato cru', guardado);
+}
+
+/* ═════ 11 · O n8n SÓ ALCANÇA O QUE PRECISA ══════════════════════════ */
+{
+  /* A promessa em 04-automacao.sql é forte: "se o VPS for comprometido, o que
+     vaza é o resumo do dia". Promessa forte pede prova. */
+  const comoBot = async fn => {
+    await db.exec('set role none; set role n8n_bot;');
+    try { return await fn(); } finally { await db.exec('set role none;'); }
+  };
+
+  for (const t of ['apoiadores', 'perfis', 'eventos', 'conteudos', 'backups', 'log_automacao']) {
+    await comoBot(() => falha('n8n não lê a tabela ' + t,
+      () => db.query(`select * from public.${t}`), 'permission denied'));
+  }
+
+  const resumo = await comoBot(() =>
+    db.query(`select public.resumo_do_dia(1) r`).then(r => r.rows[0].r));
+  (resumo && Array.isArray(resumo.agenda) && typeof resumo.a_contatar === 'number')
+    ? ok('n8n lê o resumo do dia pela função',
+         `${resumo.agenda.length} na agenda · ${resumo.a_contatar} a contatar`)
+    : bad('resumo_do_dia não respondeu', JSON.stringify(resumo));
+
+  /* o resumo traz o link pronto — é o que a Mariana clica, um por vez */
+  const comLink = (resumo.novos_apoiadores || []).every(p => /^https:\/\/wa\.me\/55\d+$/.test(p.link));
+  comLink ? ok('cada apoiador do resumo vem com o link wa.me pronto para clicar')
+          : bad('link wa.me malformado', JSON.stringify(resumo.novos_apoiadores?.[0]));
+
+  const log = await comoBot(() =>
+    db.query(`select public.registrar_log('teste','info','rodou') id`).then(r => r.rows[0].id));
+  log > 0 ? ok('n8n grava no log de automação pela RPC (sem GRANT em tabela)')
+          : bad('log falhou', log);
+
+  await comoBot(() => falha('n8n não escreve direto no log',
+    () => db.query(`insert into public.log_automacao (fluxo) values ('na marra')`),
+    'permission denied'));
+  await comoBot(() => falha('n8n não promove ninguém',
+    () => db.query(`select public.promover('intruso@qualquer.com','admin')`),
+    'permission denied'));
+  await comoBot(() => falha('n8n não lê a lista de contato',
+    () => db.query(`select * from public.apoiadores_contactaveis`), 'permission denied'));
+
+  const bk = await comoBot(() => db.query(`select public.gerar_backup() b`).then(r => r.rows[0].b));
+  bk.ok ? ok('n8n dispara o backup redundante (a única escrita que ele faz)')
+        : bad('backup pelo n8n falhou', JSON.stringify(bk));
+
+  /* e o admin vê o log no painel */
+  await como(u.admin, async () => {
+    const n = (await db.query(`select count(*)::int n from public.log_automacao`)).rows[0].n;
+    n >= 1 ? ok('admin vê o log da automação', n + ' linhas') : bad('log vazio para o admin');
+  });
+  await como(u.social, async () => {
+    const n = (await db.query(`select count(*)::int n from public.log_automacao`)).rows[0].n;
+    n === 0 ? ok('social media não vê o log da automação') : bad('log vazou', n);
+  });
 }
 
 /* ══════════════════════════════════════════════════════ RELATÓRIO */
