@@ -23,11 +23,16 @@ Levantado em 08/09/2026 a partir de fontes públicas (pessoas politicamente expo
 | Legislatura | 2025–2028, **em exercício** | Câmara |
 | Cargo na Mesa | **1ª Secretária** (biênio 2025–2026) | Câmara |
 | Nº de urna (2024) | 15678 | TSE |
-| E-mail institucional | vilma@camaracaragua.sp.gov.br | Câmara |
-| WhatsApp do gabinete | (12) 98122-2349 | Câmara |
-| Gabinete | Av. Frei Pacífico Wagner, 830 — Caraguatatuba/SP — CEP 11660-280 | Câmara |
-| Equipe do gabinete | João Batista de Carvalho · Mariana Barbosa de Jesus | Câmara |
+| Contatos do gabinete | **não transcritos aqui** — ver §6-C | Câmara |
 | Instagram | @vereadoravilma | informado pelo Guilherme |
+
+> **Por que o telefone, o e-mail e o endereço do gabinete não estão escritos
+> nesta tabela:** este arquivo vive num repositório público. Transcrever aqui o
+> contato do mandato seria publicá-lo no repositório de um site de campanha —
+> exatamente o que o §6-C proíbe de fazer no site. São dados abertos, publicados
+> pela própria Câmara: quem precisar consulta a página oficial da vereadora.
+> O que importa para o projeto está registrado: **eles existem e não podem ser
+> usados.** Ver §6-C.
 
 ### Trajetória (biografia oficial da Câmara)
 - Veio morar em Caraguatatuba para criar os filhos.
@@ -277,14 +282,25 @@ a escada é recorte → retrato emoldurado → pôster. Para recortar fundo liso
 |---|---|---|
 | Instagram @vereadoravilma | perfil dela | ✅ sim |
 | WhatsApp de **campanha** | ⛔ **não existe ainda** — pedir chip à Vilma | ✅ quando existir |
-| WhatsApp do **gabinete** (12) 98122-2349 | Câmara | ❌ **não** — estrutura de mandato |
-| E-mail vilma@camaracaragua.sp.gov.br | Câmara | ❌ **não** — institucional |
+| WhatsApp do **gabinete** | Câmara | ❌ **não** — estrutura de mandato |
+| E-mail institucional (@camaracaragua…) | Câmara | ❌ **não** — institucional |
 | Endereço/CEP do gabinete | Câmara | ❌ **não** — estrutura de mandato |
+| Nomes da equipe do gabinete | Câmara | ❌ **não** — estrutura de mandato |
+
+**Os valores desses quatro não estão escritos em lugar nenhum do repositório**, e é
+de propósito: o repositório é público, então transcrevê-los aqui os publicaria no
+mesmo projeto que jura não usá-los. Todos estão na página oficial da vereadora, no
+site da Câmara, para quem precisar conferir.
 
 O rodapé do site declara que a página não usa estrutura da Câmara. Publicar o telefone,
 o e-mail ou o endereço do gabinete **desmente essa frase quatro linhas abaixo dela**.
 Por isso `campanha.whatsapp` nasce vazio e `VT.wa()` devolve string vazia — os botões
-somem em vez de cair no número errado. Há prova automática em `ferramentas/provar.mjs`.
+somem em vez de cair no número errado.
+
+Duas provas automáticas seguram isso: `ferramentas/provar.mjs` garante que nenhum botão
+cai no número do gabinete, e `ferramentas/provar-publicacao.mjs` varre **todo o pacote
+que vai ao ar** procurando o telefone, o e-mail, o endereço e o CEP — publicação é
+publicação mesmo quando o dado só está no código-fonte, sem nada exibi-lo na tela.
 
 ## 8. Data da eleição (a fonte do contador)
 

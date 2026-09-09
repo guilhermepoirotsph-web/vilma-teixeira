@@ -73,7 +73,16 @@ async function entrar(pg, email, senha = 'teste1234') {
   await digitar(pg, 'input[name=email]', email);
   await digitar(pg, 'input[name=senha]', senha);
   await clique(pg, '#btn-entrar');
-  await dorme(1600);
+
+  /* Espera o DESFECHO, não o relógio. Com espera fixa, a bateria falhava de
+     vez em quando na partida a frio — o banco de teste ainda estava subindo e
+     1600 ms não bastavam. Prova que falha sozinha ensina a ignorar prova. */
+  await pg.waitForFunction(() => {
+    const app = document.getElementById('app');
+    const erro = document.getElementById('login-erro');
+    return (app && !app.hidden) || (erro && !erro.hidden);
+  }, { timeout: 20000 }).catch(() => {});
+  await dorme(500);   // respiro para a rota pintar depois de entrar
 }
 
 /* ══════════════════════════ 1 · LOGIN E TRAVAS ═══════════════════════ */

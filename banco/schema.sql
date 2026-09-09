@@ -125,6 +125,19 @@ create table if not exists public.apoiadores (
   apoio           text[]  not null default '{}',
   consente        boolean not null default false,
   consente_apoio  boolean not null default false,
+  -- PROVA do consentimento: em representação eleitoral ou pedido da ANPD a
+  -- pergunta é "prove que ela autorizou". Sem data e sem o texto que estava
+  -- na tela, não há prova — e a redação do site muda com o tempo.
+  consentimento_em    timestamptz not null default now(),
+  consentimento_texto text,
+  -- "não quero mais ser contatado". A linha NUNCA é apagada por causa disso:
+  -- apagar faria a pessoa voltar a ser contatada no próximo cadastro. O
+  -- opt-out só vale enquanto for lembrado.
+  optout          boolean not null default false,
+  optout_em       timestamptz,
+  optout_origem   text,
+  contatado_em    timestamptz,
+  contatado_por   uuid references public.perfis(id) on delete set null,
   origem          text not null default 'site',
   status          status_apoiador not null default 'novo',
   obs_equipe      text,
@@ -132,14 +145,33 @@ create table if not exists public.apoiadores (
   atualizado_em   timestamptz not null default now(),
   -- sem CPF, sem título de eleitor, sem RG. Não é esquecimento: é decisão.
   constraint consentimento_obrigatorio check (consente),
-  constraint apoio_exige_consentimento check (cardinality(apoio) = 0 or consente_apoio)
+  constraint apoio_exige_consentimento check (cardinality(apoio) = 0 or consente_apoio),
+  constraint optout_com_data          check (not optout or optout_em is not null)
 );
 create unique index if not exists ux_apoiadores_whatsapp on public.apoiadores (whatsapp);
 create index if not exists ix_apoiadores_bairro on public.apoiadores (bairro);
 create index if not exists ix_apoiadores_status on public.apoiadores (status, criado_em desc);
+create index if not exists ix_apoiadores_contactaveis
+  on public.apoiadores (bairro, criado_em desc) where consente and not optout;
 
 comment on table public.apoiadores is
   'Cadastro voluntário de apoio. Titular pode pedir exclusão a qualquer momento (LGPD art. 18).';
+
+-- a data do opt-out nunca depende de quem escreveu o UPDATE
+create or replace function public.marcar_optout()
+returns trigger language plpgsql as $$
+begin
+  if new.optout and not coalesce(old.optout, false) then
+    new.optout_em := coalesce(new.optout_em, now());
+  elsif not new.optout and coalesce(old.optout, false) then
+    new.optout_em := null; new.optout_origem := null;   -- voltou a aceitar
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists tg_apoiadores_optout on public.apoiadores;
+create trigger tg_apoiadores_optout before update on public.apoiadores
+  for each row execute function public.marcar_optout();
 
 
 -- ──────────────────────────────────────────── 5 · CONTEÚDO (SOCIAL)
@@ -360,7 +392,8 @@ create or replace function public.registrar_apoio(
   p_recado         text default null,
   p_apoio          text[] default '{}',
   p_consente_apoio boolean default false,
-  p_origem         text default 'site'
+  p_origem         text default 'site',
+  p_texto_consent  text default null
 ) returns json
 language plpgsql security definer set search_path = public as $$
 declare
@@ -389,28 +422,47 @@ begin
 
   insert into public.apoiadores as a
     (nome, whatsapp, bairro, email, ajuda, recado, apoio,
-     consente, consente_apoio, origem)
+     consente, consente_apoio, origem, consentimento_em, consentimento_texto)
   values
     (v_nome, v_zap, btrim(p_bairro), nullif(btrim(coalesce(p_email,'')),''),
      coalesce(p_ajuda,'{}'), nullif(btrim(coalesce(p_recado,'')),''), v_apoio,
-     true, coalesce(p_consente_apoio,false), coalesce(p_origem,'site'))
+     true, coalesce(p_consente_apoio,false), coalesce(p_origem,'site'),
+     now(), nullif(btrim(coalesce(p_texto_consent,'')),''))
   on conflict (whatsapp) do update set
      nome           = excluded.nome,
      bairro         = excluded.bairro,
      email          = coalesce(excluded.email, a.email),
      ajuda          = excluded.ajuda,
      recado         = coalesce(excluded.recado, a.recado),
-     -- apoio só é sobrescrito quando vem novo consentimento
-     apoio          = case when excluded.consente_apoio then excluded.apoio else a.apoio end,
-     consente_apoio = a.consente_apoio or excluded.consente_apoio,
+     -- REVOGAÇÃO PRECISA FUNCIONAR. O consentimento específico vale pelo que a
+     -- pessoa marcou AGORA: se ela reenviar o formulário sem marcar, o apoio
+     -- declarado sai do banco junto. Antes isto era `a.consente_apoio or
+     -- excluded.consente_apoio`, que só sabia ligar — quem quisesse retirar a
+     -- declaração de posicionamento político não conseguia por conta própria,
+     -- e revogar tem que ser tão fácil quanto consentir (LGPD art. 8º, §5º).
+     consente_apoio = excluded.consente_apoio,
+     apoio          = case when excluded.consente_apoio then excluded.apoio
+                           else '{}'::text[] end,
+     -- vale o último consentimento que a pessoa efetivamente leu
+     consentimento_em    = now(),
+     consentimento_texto = coalesce(excluded.consentimento_texto, a.consentimento_texto),
+     -- cadastrar-se de novo É voltar a aceitar contato
+     optout         = false,
      atualizado_em  = now()
   returning a.id, (a.criado_em = a.atualizado_em) into v_id, v_novo;
 
-  -- devolve o mínimo: o site não precisa (e não deve) receber a ficha de volta
-  return json_build_object('ok', true, 'novo', v_novo);
+  -- Resposta IDÊNTICA para cadastro novo e recadastro, de propósito. Devolver
+  -- "novo: false" transformaria o formulário público num consultor de base:
+  -- bastaria enviar números e ler a resposta para descobrir quem já apoia a
+  -- campanha — e apoio político é dado sensível. A tela de sucesso não
+  -- precisa dessa informação, e a equipe já a tem no painel.
+  return json_build_object('ok', true);
 end $$;
 
-comment on function public.registrar_apoio is
+-- assinatura completa no comment: sem ela, se um dia existirem duas versões da
+-- função, este comando quebra com "function name is not unique"
+comment on function public.registrar_apoio(
+  text, text, text, text, text[], text, text[], boolean, text, text) is
   'Única forma de o site gravar um apoiador. Valida no servidor, deduplica por '
   'WhatsApp e descarta a declaração de apoio quando não há consentimento específico.';
 
@@ -443,7 +495,7 @@ grant usage on schema public to anon, authenticated;
 grant select on public.agenda_publica to anon;               -- só as views
 grant select on public.site_publico   to anon;
 grant execute on function public.registrar_apoio(
-  text, text, text, text, text[], text, text[], boolean, text) to anon;
+  text, text, text, text, text[], text, text[], boolean, text, text) to anon;
 
 -- equipe logada: acesso às tabelas, com a RLS acima decidindo o que cada
 -- papel enxerga. (No Supabase o `authenticated` já vem com estes grants por

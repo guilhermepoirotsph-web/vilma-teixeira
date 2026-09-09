@@ -2,22 +2,38 @@
  * virar-dominio.mjs — troca o site de "prévia" para "produção no domínio próprio".
  *
  * Faz de uma vez o checklist que está comentado no topo de partes/_molde.html:
- *   1. cria o arquivo CNAME (é ele que amarra o GitHub Pages ao domínio)
- *   2. tira a <meta name="robots" content="noindex,nofollow">
- *   3. ativa <link rel="canonical"> e <meta property="og:url">
- *   4. deixa og:image e twitter:image em URL ABSOLUTA
- *   5. acrescenta "url" ao JSON-LD da Person
- *   6. libera o robots.txt (mantendo /painel/ fora dos buscadores)
- *   7. gera o sitemap.xml
+ *   1. tira a <meta name="robots" content="noindex,nofollow">
+ *   2. ativa <link rel="canonical"> e <meta property="og:url">
+ *   3. deixa og:image e twitter:image em URL ABSOLUTA
+ *   4. acrescenta "url" ao JSON-LD da Person
+ *   5. libera o robots.txt (mantendo /painel/ fora dos buscadores)
+ *   6. gera o sitemap.xml
+ *   7. escreve o arquivo CNAME (ver a ressalva abaixo)
  *   8. roda o montar.mjs (regenera o index.html)
  *
  *   node virar-dominio.mjs                     → www.vilmateixeira.com
  *   node virar-dominio.mjs vilmateixeira.com   → outro domínio
- *   node virar-dominio.mjs --reverter          → volta para prévia (noindex, sem CNAME)
+ *   node virar-dominio.mjs --reverter          → volta para prévia (noindex)
  *
- * ⚠ ORDEM QUE IMPORTA: só rodar isto DEPOIS que o DNS do domínio já estiver
- * respondendo. Se o CNAME entrar antes, o Pages passa a atender só no domínio
- * novo e a prévia do github.io sai do ar até o DNS propagar.
+ * ⚠ O ARQUIVO CNAME NÃO É O QUE AMARRA O DOMÍNIO — não neste projeto.
+ * Isso vale para o Pages publicando direto de uma branch. Aqui a publicação é
+ * por GitHub Actions, e a documentação do GitHub é explícita: "If you are
+ * publishing from a custom GitHub Actions workflow, no CNAME file is created,
+ * and any existing CNAME file is ignored and is not required."
+ * Quem amarra é **Settings → Pages → Custom domain**. O arquivo continua sendo
+ * escrito porque não atrapalha e documenta a intenção — mas não substitui o
+ * clique.
+ *
+ * ⚠ ORDEM CERTA (a documentação do GitHub inverte o que parece intuitivo):
+ *   1º  Settings → Pages → Source = "GitHub Actions" e Custom domain preenchido
+ *   2º  DNS na Locaweb (A no apex + CNAME do www)
+ *   3º  este script, quando o domínio já responder
+ *   4º  Settings → Pages → "Enforce HTTPS" (o certificado leva alguns minutos)
+ * Colocar o DNS antes de reivindicar o domínio no GitHub abre uma janela em
+ * que outra pessoa pode hospedar um site nesse subdomínio — é o próprio GitHub
+ * que avisa: "Configuring your custom domain with the DNS provider without
+ * adding it to GitHub could result in someone else being able to host a site
+ * on one of your subdomains."
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -138,9 +154,9 @@ m = m.replace(/<!-- ============ CHECKLIST DE PUBLICAÇÃO[\s\S]*?==============
 
 gravar(MOLDE, m);
 
-// 6. CNAME — é este arquivo que amarra o GitHub Pages ao domínio
+// 6. CNAME — documenta a intenção; quem amarra é Settings → Pages (ver o topo)
 gravar(path.join(RAIZ, 'CNAME'), DOMINIO + '\n');
-feito.push(`CNAME criado (${DOMINIO})`);
+feito.push(`CNAME escrito (${DOMINIO}) — lembrando: com Actions ele é ignorado`);
 
 // 7. robots.txt liberado, /painel/ fora
 gravar(path.join(RAIZ, 'robots.txt'), robotsPublicado(BASE));
@@ -161,5 +177,11 @@ feito.push('sitemap.xml gerado (home + privacidade)');
 execFileSync('node', [path.join(RAIZ, 'montar.mjs')], { stdio: 'inherit' });
 
 console.log(`\n✓ Site preparado para ${BASE}/\n   ` + feito.join('\n   '));
-console.log('\nAgora: git add -A && git commit && git push  →  no GitHub, Settings → Pages,');
-console.log('conferir o domínio e marcar "Enforce HTTPS" (o certificado leva alguns minutos).');
+console.log('\nAgora:  git add -A && git commit -m "virada para o domínio" && git push');
+console.log('Depois, no GitHub → Settings → Pages:');
+console.log('   · Source = "GitHub Actions"');
+console.log(`   · Custom domain = ${DOMINIO}`);
+console.log('   · "Enforce HTTPS" quando o certificado sair (leva alguns minutos)');
+console.log('\nDNS na Locaweb — apex em A, www em CNAME:');
+console.log('   @    A      185.199.108.153 · 185.199.109.153 · 185.199.110.153 · 185.199.111.153');
+console.log('   www  CNAME  guilhermepoirotsph-web.github.io.   (com o ponto no fim)');

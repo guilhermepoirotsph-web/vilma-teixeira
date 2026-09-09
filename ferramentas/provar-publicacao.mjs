@@ -105,27 +105,80 @@ const publicar = args => {
      que o adversário tira. Esta prova varre o pacote inteiro. */
   publicar([]);
   const SITE = path.join(RAIZ, '_site');
-  const PROIBIDO = [
-    { re: /5512981222349|\(12\)\s*98122-2349|12981222349/, o: 'WhatsApp do gabinete' },
-    { re: /camaracaragua\.sp\.gov\.br/i,                   o: 'e-mail institucional da Câmara' },
-    { re: /sp\.leg\.br/i,                                  o: 'e-mail do domínio da Câmara' },
-    { re: /Frei Pacífico Wagner/i,                         o: 'endereço do gabinete' },
-    { re: /11660-280/,                                     o: 'CEP do gabinete' },
-  ];
   const TXT = /\.(html?|js|mjs|css|json|txt|xml|svg)$/i;
   const varrer = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(d => {
     const p = path.join(dir, d.name);
     return d.isDirectory() ? varrer(p) : (TXT.test(d.name) ? [p] : []);
   });
-  const vazou = [];
-  for (const f of varrer(SITE)) {
-    const t = fs.readFileSync(f, 'utf8');
-    for (const s of PROIBIDO)
-      if (s.re.test(t)) vazou.push(`${path.relative(SITE, f)} → ${s.o}`);
-  }
+
+  /* A regra é por PADRÃO, não pelo valor. Procurar o número do gabinete
+     literalmente obrigaria a escrevê-lo aqui — publicando no repositório
+     justamente o dado que a prova existe para manter fora. E a regra por
+     padrão é mais forte: pega também qualquer OUTRO telefone que alguém
+     cole sem pensar. */
+  const CAMPANHA = (fs.readFileSync(path.join(RAIZ, 'assets', 'js', 'dados.js'), 'utf8')
+    .match(/whatsapp:\s*'([0-9]*)'/) || [, ''])[1];
+
+  const INSTITUCIONAL = [
+    { re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]*\.(gov|leg)\.br/i, o: 'e-mail institucional (.gov.br/.leg.br)' },
+    { re: /\b1166[0-9]-?[0-9]{3}\b/,                          o: 'CEP da região do gabinete' },
+    { re: /Câmara Municipal de Caraguatatuba[^<]{0,40}(Av|Rua|Avenida)/i, o: 'endereço ligado à Câmara' },
+  ];
+  /* Celular brasileiro de verdade: DDD válido, o 9 obrigatório, 8 dígitos. */
+  const DDD = /^(1[1-9]|2[12478]|3[1-8]|4[1-9]|5[13-5]|6[1-9]|7[134579]|8[1-9]|9[1-9])$/;
+  const TELEFONE = /(?:\+?55\s?)?\(?(\d{2})\)?[\s-]?9(\d{4})[\s-]?(\d{4})/g;
+  /* Placeholder de formulário não é vazamento: "(12) 99999-9999" e
+     "12999998888" existem para ensinar o formato. Um número real quase nunca
+     traz quatro dígitos iguais seguidos; um placeholder quase sempre traz. */
+  const ehExemplo = assinante => /(\d)\1{3}/.test(assinante);
+
+  const varrerVazamento = () => {
+    const vazou = [];
+    for (const f of varrer(SITE)) {
+      const rel = path.relative(SITE, f);
+      // vendor/ é biblioteca de terceiro minificada: constantes como 4294967295
+      // têm cara de telefone e não são conteúdo nosso
+      if (rel.split(path.sep)[0] === 'vendor') continue;
+      const t = fs.readFileSync(f, 'utf8');
+      for (const s of INSTITUCIONAL) if (s.re.test(t)) vazou.push(`${rel} → ${s.o}`);
+
+      for (const [achado, ddd, a, b] of t.matchAll(TELEFONE)) {
+        if (!DDD.test(ddd)) continue;
+        if (ehExemplo(a + b)) continue;
+        const so = achado.replace(/\D/g, '').replace(/^55/, '');
+        // o único telefone que pode existir no que vai ao ar é o chip de campanha
+        if (CAMPANHA && so === CAMPANHA.replace(/^55/, '')) continue;
+        vazou.push(`${rel} → telefone que não é o da campanha: ${achado.trim()}`);
+      }
+    }
+    return vazou;
+  };
+
+  const vazou = varrerVazamento();
   vazou.length === 0
-    ? ok('nenhum contato ou endereço do gabinete no que vai ao ar')
+    ? ok('no que vai ao ar não existe telefone além do chip de campanha, nem contato institucional',
+         CAMPANHA ? 'chip: ' + CAMPANHA : 'nenhum telefone (chip ainda não existe)')
     : bad('estrutura de mandato no material publicado', vazou.join(' | '));
+
+  /* CONTROLE POSITIVO. Prova que só diz "está limpo" e nunca foi vista
+     apontando sujeira não vale nada: pode estar quebrada há meses. Aqui um
+     telefone realista (fictício, DDD de Caraguá) e um e-mail institucional
+     são plantados no pacote, e a varredura tem que achar os dois. */
+  {
+    const alvo = path.join(SITE, 'assets', 'js', 'zz-teste-contato.js');
+    fs.writeFileSync(alvo,
+      `const CONTATO = { fone: '(12) 98213-4576', ` +
+      `email: 'fulano.teste@camaracaragua.sp.gov.br' };\n`);
+    try {
+      const achados = varrerVazamento();
+      achados.some(a => /telefone/.test(a))
+        ? ok('a varredura ACHA um telefone plantado no pacote')
+        : bad('telefone plantado passou pela varredura');
+      achados.some(a => /institucional/.test(a))
+        ? ok('a varredura ACHA um e-mail institucional plantado')
+        : bad('e-mail institucional plantado passou');
+    } finally { fs.rmSync(alvo, { force: true }); }
+  }
 
   /* e a foto oficial da Câmara também não pode ser servida */
   const fotos = fs.existsSync(path.join(SITE, 'fotos'))

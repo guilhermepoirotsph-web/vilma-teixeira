@@ -35,9 +35,21 @@ await db.exec(`
 `);
 
 /* ───────────────────────────── roda o schema de produção ─────────────── */
-const sql = await readFile(join(AQUI, 'schema.sql'), 'utf8');
-try { await db.exec(sql); ok('schema.sql roda inteiro sem erro'); }
-catch (e) { bad('schema.sql falhou', e.message); imprimir(); process.exit(1); }
+/* Na ordem em que o Guilherme vai colar no SQL Editor. Rodar os dois aqui é
+   o que garante que o segundo não conflita com o primeiro. */
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql']) {
+  const sql = await readFile(join(AQUI, arq), 'utf8');
+  try { await db.exec(sql); ok(arq + ' roda inteiro sem erro'); }
+  catch (e) { bad(arq + ' falhou', e.message); imprimir(); process.exit(1); }
+}
+
+/* e roda DE NOVO: migração que não é idempotente quebra na segunda mão, e a
+   segunda mão sempre acontece (colou duas vezes, refez o banco, restaurou). */
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql']) {
+  const sql = await readFile(join(AQUI, arq), 'utf8');
+  try { await db.exec(sql); ok(arq + ' é idempotente (roda 2× sem erro)'); }
+  catch (e) { bad(arq + ' não é idempotente', String(e.message).slice(0, 120)); }
+}
 
 // PGlite roda como dono das tabelas; o dono pula RLS. FORCE faz a RLS valer
 // também para ele, para o teste medir a policy de verdade.
@@ -102,20 +114,26 @@ await como(null, async () => {
        'maria@exemplo.com', array['divulgar','panfletar'], 'Bom trabalho!',
        array['15115','2223'], true, 'site') as j`);
   const j = r.rows[0].j;
-  (j.ok && j.novo) ? ok('anon grava apoiador pela RPC registrar_apoio') : bad('RPC não gravou', JSON.stringify(j));
+  j.ok ? ok('anon grava apoiador pela RPC registrar_apoio')
+       : bad('RPC não gravou', JSON.stringify(j));
 });
 
-const grav = await db.query(`select * from public.apoiadores where whatsapp='12988887777'`);
+const grav = await db.query(`select * from public.apoiadores where public.zap_e164(whatsapp)=public.zap_e164('12988887777')`);
 const a = grav.rows[0];
 a ? ok('apoiador gravado', a.nome) : bad('apoiador não encontrado');
-a && a.whatsapp === '12988887777' ? ok('WhatsApp normalizado no servidor', a.whatsapp) : bad('whatsapp cru');
+/* "(12) 98888-7777" digitado vira "5512988887777" guardado: o servidor tira a
+   pontuação E põe o código do país. Sem o 55 o link wa.me abre conversa vazia,
+   e o mesmo eleitor entra duas vezes por dois formatos. */
+a && a.whatsapp === '5512988887777'
+  ? ok('WhatsApp normalizado no servidor, com código do país', a.whatsapp)
+  : bad('whatsapp fora da forma canônica', a?.whatsapp);
 a && a.apoio.length === 2 ? ok('apoio consentido gravado', a.apoio.join('+')) : bad('apoio', JSON.stringify(a?.apoio));
 
 /* apoio SEM consentimento específico tem que ser descartado */
 await como(null, () => db.query(
   `select public.registrar_apoio('Joao da Silva Teste','12977776666','Centro',null,
      array['acompanhar'], null, array['15115'], false, 'site')`));
-const semC = (await db.query(`select apoio, consente_apoio from public.apoiadores where whatsapp='12977776666'`)).rows[0];
+const semC = (await db.query(`select apoio, consente_apoio from public.apoiadores where public.zap_e164(whatsapp)=public.zap_e164('12977776666')`)).rows[0];
 (semC && semC.apoio.length === 0 && semC.consente_apoio === false)
   ? ok('sem consentimento específico, a declaração de apoio é DESCARTADA (LGPD art. 11, I)')
   : bad('gravou dado sensível sem consentimento!', JSON.stringify(semC));
@@ -124,7 +142,7 @@ const semC = (await db.query(`select apoio, consente_apoio from public.apoiadore
 await como(null, () => db.query(
   `select public.registrar_apoio('Ana Paula Teste','12966665555','Tinga',null,
      '{}', null, array['9999','15115'], true, 'site')`));
-const filtrado = (await db.query(`select apoio from public.apoiadores where whatsapp='12966665555'`)).rows[0];
+const filtrado = (await db.query(`select apoio from public.apoiadores where public.zap_e164(whatsapp)=public.zap_e164('12966665555')`)).rows[0];
 (filtrado && filtrado.apoio.length === 1 && filtrado.apoio[0] === '15115')
   ? ok('RPC filtra número que a página não apoia', filtrado.apoio.join(','))
   : bad('número estranho entrou', JSON.stringify(filtrado?.apoio));
@@ -139,12 +157,18 @@ await como(null, () => falha('RPC recusa WhatsApp inválido',
 await como(null, () => db.query(
   `select public.registrar_apoio('Maria Aparecida de Souza','12988887777','Porto Novo',
      null,'{}',null,'{}',false,'site')`));
-const dup = await db.query(`select count(*)::int n, max(bairro) b from public.apoiadores where whatsapp='12988887777'`);
+const dup = await db.query(`select count(*)::int n, max(bairro) b from public.apoiadores where public.zap_e164(whatsapp)=public.zap_e164('12988887777')`);
 dup.rows[0].n === 1 ? ok('cadastro repetido atualiza em vez de duplicar', 'bairro agora: ' + dup.rows[0].b)
                     : bad('duplicou', dup.rows[0].n);
-const manteve = (await db.query(`select apoio from public.apoiadores where whatsapp='12988887777'`)).rows[0];
-manteve.apoio.length === 2 ? ok('reenvio sem consentimento NÃO apaga o apoio já consentido')
-                           : bad('apagou o apoio', JSON.stringify(manteve.apoio));
+/* Esta prova já afirmou o CONTRÁRIO — "reenvio sem consentimento não apaga o
+   apoio já consentido" — e com isso carimbava um defeito como se fosse regra:
+   quem quisesse retirar a declaração de posicionamento político não conseguia
+   por conta própria. Revogar tem que ser tão fácil quanto consentir. */
+const revogado = (await db.query(
+  `select apoio, consente_apoio from public.apoiadores where public.zap_e164(whatsapp)=public.zap_e164('12988887777')`)).rows[0];
+(revogado.apoio.length === 0 && revogado.consente_apoio === false)
+  ? ok('reenviar sem marcar o consentimento específico REVOGA e limpa o dado sensível')
+  : bad('dado sensível ficou preso no banco', JSON.stringify(revogado));
 
 /* constraint do banco (última linha de defesa) */
 await falha('CHECK do banco barra apoio sem consentimento (mesmo por SQL direto)',
@@ -293,6 +317,210 @@ await como(u.admin, async () => {
     ? ok('admin enxerga tudo', `${r.e} eventos · ${r.a} apoiadores · ${r.c} conteúdos`)
     : bad('admin não viu tudo', JSON.stringify(r));
 });
+
+/* ══════════ 7 · CONSENTIMENTO, DESCADASTRAMENTO E CONTATO ═══════════ */
+{
+  const zap = '12977776666';
+  const TEXTO = 'Autorizo a equipe da Vilma a me chamar no WhatsApp sobre a campanha.';
+
+  // cadastro pelo site, guardando a PROVA do consentimento
+  await como(null, () => db.query(
+    `select public.registrar_apoio('Joana Ribeiro',$1,'Massaguaçu',null,
+       array['panfletar'],null,array['15115'],true,'site',$2)`, [zap, TEXTO]));
+
+  const p = (await db.query(
+    `select consentimento_texto, consentimento_em is not null tem_data, optout
+       from public.apoiadores where public.zap_e164(whatsapp) = public.zap_e164($1)`, [zap])).rows[0];
+  (p.consentimento_texto === TEXTO && p.tem_data)
+    ? ok('o texto exato do consentimento fica gravado com data (prova, não promessa)')
+    : bad('consentimento sem prova', JSON.stringify(p));
+
+  // a pessoa se descadastra sozinha, sem login
+  await como(null, () => db.query(`select public.descadastrar($1,'site')`, [zap]));
+  const d = (await db.query(
+    `select optout, optout_em is not null tem_data, optout_origem
+       from public.apoiadores where public.zap_e164(whatsapp) = public.zap_e164($1)`, [zap])).rows[0];
+  (d.optout && d.tem_data && d.optout_origem === 'site')
+    ? ok('qualquer pessoa se descadastra sozinha, e a data é gravada pelo gatilho')
+    : bad('descadastramento falhou', JSON.stringify(d));
+
+  // e some da lista de contato, sem sumir do banco
+  await como(u.assessora, async () => {
+    const na = (await db.query(
+      `select count(*)::int n from public.apoiadores_contactaveis where zap = $1`,
+      ['55' + zap])).rows[0].n;
+    const total = (await db.query(
+      `select count(*)::int n from public.apoiadores where public.zap_e164(whatsapp) = public.zap_e164($1)`, [zap])).rows[0].n;
+    (na === 0 && total === 1)
+      ? ok('quem pediu para sair some da lista de contato mas NÃO é apagado do banco')
+      : bad('opt-out inconsistente', `contactaveis=${na} tabela=${total}`);
+  });
+
+  // resposta idêntica para número que não existe: sem oráculo de existência
+  const r = await como(null, () => db.query(
+    `select public.descadastrar('11888887777') as r`));
+  JSON.stringify(r.rows[0].r) === JSON.stringify({ ok: true })
+    ? ok('descadastrar não revela se o número está na base (sem oráculo)')
+    : bad('descadastrar vazou existência', JSON.stringify(r.rows[0].r));
+
+  // cadastrar-se de novo é voltar a aceitar — e SEM marcar o consentimento
+  // específico, o que precisa RETIRAR a declaração de apoio (revogação)
+  await como(null, () => db.query(
+    `select public.registrar_apoio('Joana Ribeiro',$1,'Massaguaçu',null,
+       array['panfletar'],null,array[]::text[],false,'site',$2)`, [zap, TEXTO]));
+  const v = (await db.query(
+    `select optout, optout_em, consente_apoio, apoio
+       from public.apoiadores where public.zap_e164(whatsapp) = public.zap_e164($1)`, [zap])).rows[0];
+  (v.optout === false && v.optout_em === null)
+    ? ok('cadastrar-se de novo reabre o contato e limpa a data do opt-out')
+    : bad('opt-out não foi reaberto', JSON.stringify(v));
+  (v.consente_apoio === false && (v.apoio || []).length === 0)
+    ? ok('reenviar SEM o consentimento específico retira a declaração de apoio (revogação funciona)')
+    : bad('consentimento específico ficou preso ligado', JSON.stringify(v));
+
+  // a resposta pública não pode contar se a pessoa já era cadastrada
+  const r1 = (await como(null, () => db.query(
+    `select public.registrar_apoio('Alguem Novo','12955554444','Centro') r`))).rows[0].r;
+  const r2 = (await como(null, () => db.query(
+    `select public.registrar_apoio('Alguem Novo','12955554444','Centro') r`))).rows[0].r;
+  JSON.stringify(r1) === JSON.stringify(r2) && !('novo' in r1)
+    ? ok('registrar_apoio responde igual para cadastro novo e repetido (sem oráculo de base)')
+    : bad('a RPC revela quem já é apoiador', JSON.stringify(r1) + ' vs ' + JSON.stringify(r2));
+
+  // o social media continua sem ver ninguém, nem pela view nova
+  await como(u.social, async () => {
+    const n = (await db.query(`select count(*)::int n from public.apoiadores_contactaveis`)).rows[0].n;
+    n === 0 ? ok('a view de contato respeita a RLS: social media vê ZERO')
+            : bad('view de contato vazou para o social media', n);
+  });
+
+  // o número sai pronto para virar link wa.me
+  const e164 = (await db.query(`select public.zap_e164('(12) 97777-6666') z`)).rows[0].z;
+  e164 === '5512977776666'
+    ? ok('zap_e164 monta o número com país e DDD para o link wa.me', e164)
+    : bad('zap_e164 errado', e164);
+}
+
+/* ═══════════════════════ 8 · BACKUP DENTRO DO BANCO ══════════════════ */
+{
+  const r = (await db.query(`select public.gerar_backup() b`)).rows[0].b;
+  (r.ok && r.tabelas >= 5 && r.linhas > 0)
+    ? ok('backup varre o catálogo e grava JSON na própria tabela',
+         `${r.tabelas} tabelas · ${r.linhas} linhas`)
+    : bad('backup falhou', JSON.stringify(r));
+
+  // tabela nova entra sozinha: é o ponto de varrer pg_class em vez de lista fixa
+  await db.exec(`create table if not exists public.tabela_futura (id int primary key);
+                 insert into public.tabela_futura values (1) on conflict do nothing;`);
+  const r2 = (await db.query(`select public.gerar_backup() b`)).rows[0].b;
+  r2.tabelas === r.tabelas + 1
+    ? ok('tabela criada depois entra no backup sozinha (sem lista para apodrecer)')
+    : bad('backup não pegou a tabela nova', `${r.tabelas} → ${r2.tabelas}`);
+  await db.exec(`drop table public.tabela_futura;`);
+
+  /* RLS não dá erro: ela filtra. O social media consegue CONSULTAR a tabela e
+     recebe zero linha — que é o comportamento certo e o que precisa ser
+     medido. Esperar exceção aqui testaria o GRANT, não a policy. */
+  await como(u.social, async () => {
+    const n = (await db.query(`select count(*)::int n from public.backups`)).rows[0].n;
+    n === 0 ? ok('social media consulta backups e recebe ZERO linha (policy filtra)')
+            : bad('social media leu backup!', n);
+  });
+  await como(u.admin, async () => {
+    const n = (await db.query(`select count(*)::int n from public.backups`)).rows[0].n;
+    n >= 2 ? ok('admin lê os backups guardados', n + ' snapshots')
+           : bad('admin não viu backup', n);
+  });
+}
+
+/* ═════ 9 · ESCALADA DE PAPEL — a falha que quase foi ao ar ═══════════ */
+{
+  /* Antes do 03-blindagem.sql isto PASSAVA, sem erro nenhum:
+       antes:  {"papel":null,"ativo":false}
+       depois: {"papel":"admin","ativo":true}
+     RLS decide QUAIS LINHAS, nunca QUAIS COLUNAS — e o GRANT era da tabela
+     inteira. A tela de "aguardando liberação" continuava aparecendo. */
+  await como(u.intruso, () => falha(
+    'conta INERTE não se promove a admin pela própria linha (escalada fechada)',
+    () => db.query(`update public.perfis set papel='admin', ativo=true where id=$1`, [u.intruso]),
+    'permission denied|papel e ativo'));
+
+  const ainda = (await db.query(
+    `select papel, ativo from public.perfis where id=$1`, [u.intruso])).rows[0];
+  (ainda.papel === null && ainda.ativo === false)
+    ? ok('a conta inerte continua inerte depois da tentativa')
+    : bad('a conta se promoveu!', JSON.stringify(ainda));
+
+  // nem o social media, que é conta legítima, consegue virar admin
+  await como(u.social, () => falha(
+    'conta com papel legítimo também não se promove',
+    () => db.query(`update public.perfis set papel='admin' where id=$1`, [u.social]),
+    'permission denied|papel e ativo'));
+
+  // o caminho legítimo continua funcionando
+  const msg = (await db.query(`select public.promover($1,'social') m`,
+    ['social@vilma.com.br'])).rows[0].m;
+  /agora é social/.test(msg) ? ok('promover() continua funcionando (a tranca abre por dentro)', msg)
+                             : bad('promover() quebrou', msg);
+  const rev = (await db.query(`select public.revogar($1) m`, ['intruso@qualquer.com'])).rows[0].m;
+  /perdeu o acesso/.test(rev) ? ok('revogar() tira o acesso de quem saiu da campanha')
+                              : bad('revogar() falhou', rev);
+
+  // e o próprio nome continua editável — a pessoa precisa poder se corrigir
+  await como(u.social, () => db.query(
+    `update public.perfis set nome='Lucas Social' where id=$1`, [u.social]));
+  const nome = (await db.query(`select nome from public.perfis where id=$1`, [u.social])).rows[0].nome;
+  nome === 'Lucas Social' ? ok('cada um continua podendo corrigir o próprio nome')
+                          : bad('não consegue editar o nome', nome);
+
+  /* renomear a chave do site apagava a lacuna que o site lê */
+  await como(u.social, () => falha(
+    'social media não RENOMEIA chave do site (renomear = apagar + criar)',
+    () => db.query(`update public.site_conteudo set chave='video.urlx' where chave='video.url'`),
+    'permission denied'));
+
+  /* e a prova de consentimento de outra pessoa não é editável por PATCH */
+  await como(u.assessora, () => falha(
+    'assessora não reescreve a prova de consentimento do titular',
+    () => db.query(`update public.apoiadores set consentimento_texto='eu autorizei tudo'`),
+    'permission denied'));
+  await como(u.assessora, () => db.query(
+    `update public.apoiadores set status='contatado', contatado_em=now()`));
+  ok('assessora continua podendo trabalhar a lista (situação e contato)');
+}
+
+/* ═════ 10 · O MESMO ELEITOR NÃO ENTRA DUAS VEZES ════════════════════ */
+{
+  const A = '12933332222', B = '5512933332222';   // a mesma pessoa, dois formatos
+  await como(null, () => db.query(
+    `select public.registrar_apoio('Pessoa Repetida',$1,'Centro')`, [A]));
+  await como(null, () => db.query(
+    `select public.registrar_apoio('Pessoa Repetida',$1,'Centro')`, [B]));
+  const n = (await db.query(
+    `select count(*)::int n from public.apoiadores
+      where public.zap_e164(whatsapp) = '5512933332222'`)).rows[0].n;
+  n === 1 ? ok('11 dígitos e 13 dígitos são a MESMA pessoa (opt-out não fura)')
+          : bad('a mesma pessoa entrou duas vezes', n);
+
+  await como(null, () => db.query(`select public.descadastrar($1)`, [A]));
+  const saiu = (await db.query(
+    `select optout from public.apoiadores
+      where public.zap_e164(whatsapp)='5512933332222'`)).rows[0].optout;
+  saiu ? ok('descadastrar por qualquer um dos formatos alcança a pessoa')
+       : bad('opt-out não pegou');
+
+  await falha('INSERT direto com o outro formato também é barrado pelo índice',
+    () => db.query(`insert into public.apoiadores (nome,whatsapp,bairro,consente)
+                    values ('Clone','12933332222','Centro',true)`),
+    'duplicate key|ux_apoiadores');
+
+  const guardado = (await db.query(
+    `select whatsapp from public.apoiadores
+      where public.zap_e164(whatsapp)='5512933332222'`)).rows[0].whatsapp;
+  guardado === '5512933332222'
+    ? ok('a coluna guarda sempre a forma canônica, não o que a pessoa digitou', guardado)
+    : bad('número guardado em formato cru', guardado);
+}
 
 /* ══════════════════════════════════════════════════════ RELATÓRIO */
 function imprimir() {

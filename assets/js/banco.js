@@ -146,6 +146,9 @@
             p_apoio: dados.apoio || [],
             p_consente_apoio: Boolean(dados.consente_apoio),
             p_origem: dados.origem || 'site',
+            // o texto que estava NA TELA quando ela marcou. Se a redação do
+            // site mudar depois, o que vale é o que ela leu.
+            p_texto_consent: dados.texto_consent || null,
           }),
         });
         return { ok: true, modo: 'banco', dado: r };
@@ -155,6 +158,21 @@
         console.warn('[apoiar]', e.message);
         return { ok: true, modo: 'local', erro: e.message };
       }
+    },
+
+    /**
+     * "Não quero mais ser contatado" (privacidade.html#descadastrar).
+     * Marca opt-out; nunca apaga. Sem banco ligado, ESTOURA de propósito:
+     * a página precisa dizer a verdade e mandar a pessoa para um canal humano,
+     * em vez de mostrar "pronto!" sem ter registrado nada.
+     */
+    async descadastrar(whatsapp) {
+      if (!ligado) throw new Error('cadastro ainda não está ligado');
+      return pedir('/rpc/descadastrar', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation' },
+        body: JSON.stringify({ p_whatsapp: String(whatsapp || ''), p_origem: 'site' }),
+      });
     },
 
     fila,

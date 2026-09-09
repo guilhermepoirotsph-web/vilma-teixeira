@@ -164,6 +164,16 @@ VT.secao('apoie', () => {
   };
   const rotuloAjuda = v => ROTULOS[v] || v;
 
+  /* O texto que estava NA TELA quando a pessoa marcou, lido do próprio DOM.
+     Guardar a redação de hoje numa constante do código não serve de prova:
+     quando a redação mudar, a constante muda junto, e o registro antigo passa
+     a alegar um texto que aquela pessoa nunca leu. Em representação eleitoral
+     ou pedido da ANPD, a pergunta é exatamente "o que ela leu?". */
+  const textoDoAceite = () => [...form.querySelectorAll('.aceite')]
+    .filter(l => l.querySelector('input')?.checked && !l.hidden)
+    .map(l => l.querySelector('span')?.textContent.replace(/\s+/g, ' ').trim())
+    .filter(Boolean).join(' | ') || null;
+
   /* ------------------------------------------------------------- envio */
   let enviando = false;
   form.addEventListener('submit', async e => {
@@ -185,6 +195,7 @@ VT.secao('apoie', () => {
       consente_apoio: Boolean(aceiteSensivel && !aceiteSensivel.hidden &&
                               aceiteSensivel.querySelector('input').checked),
       origem: 'site',
+      texto_consent: textoDoAceite(),
     };
     // sem consentimento específico, a declaração de apoio não sai daqui
     if (!dados.consente_apoio) dados.apoio = [];

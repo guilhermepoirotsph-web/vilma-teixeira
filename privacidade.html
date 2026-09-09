@@ -25,6 +25,25 @@
   .doc a{color:var(--magenta-300);text-decoration:underline;text-underline-offset:3px}
   .voltar{display:inline-flex;align-items:center;gap:8px;margin-bottom:26px;font-weight:800;
     font-size:.86rem;color:var(--ouro)}
+
+  /* descadastramento — a única parte interativa desta página */
+  .saida{display:grid;gap:14px;margin:18px 0 10px;padding:22px;
+    border-radius:var(--raio-g);align-items:end;
+    grid-template-columns:minmax(0,1fr) auto;
+    background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+    box-shadow:inset 0 0 0 1px var(--linha)}
+  .saida__campo{display:grid;gap:7px;min-width:0}
+  .saida__campo span{font-weight:800;font-size:.82rem;letter-spacing:.02em;
+    color:var(--texto-claro)}
+  .saida__campo input{width:100%;padding:13px 15px;border-radius:14px;
+    border:1px solid var(--linha);background:rgba(4,18,43,.55);
+    color:var(--texto-claro);font:600 16px/1.2 var(--f-texto)}   /* 16px: iOS não dá zoom */
+  .saida__campo input:focus-visible{outline:2px solid var(--ouro);outline-offset:2px}
+  .saida .btn{white-space:nowrap}
+  .saida__aviso{grid-column:1/-1;margin:0;font-size:.92rem;font-weight:700;
+    color:var(--ouro);line-height:1.6}
+  .saida__aviso--erro{color:var(--magenta-300)}
+  @media (max-width:620px){ .saida{grid-template-columns:1fr} .saida .btn{width:100%} }
 </style>
 </head>
 <body>
@@ -140,6 +159,29 @@
       não precisa preencher formulário e não tem custo.
     </p>
 
+    <h2 id="descadastrar">Não quero mais ser contatado</h2>
+    <p>
+      Se você só quer parar de receber contato da campanha, resolve aqui mesmo, agora,
+      sem falar com ninguém. Escreva o WhatsApp que você cadastrou:
+    </p>
+
+    <form class="saida" id="form-saida" novalidate>
+      <label class="saida__campo">
+        <span>Seu WhatsApp com DDD</span>
+        <input type="tel" name="whatsapp" inputmode="numeric" autocomplete="tel"
+               placeholder="(12) 99999-9999" required>
+      </label>
+      <button class="btn btn--ouro" type="submit" id="btn-saida">Parar de receber contato</button>
+      <p class="saida__aviso" id="saida-msg" role="status" aria-live="polite" hidden></p>
+    </form>
+
+    <p class="miudo">
+      Isso <b>não apaga</b> seus dados — só registra que você não quer mais ser
+      procurado, para que ninguém da equipe te chame por engano depois. Se você quiser
+      a <b>exclusão completa</b>, peça pelos canais acima: aí é apagado de verdade.
+      E se um dia você se cadastrar de novo pelo site, entendemos que voltou a aceitar.
+    </p>
+
     <h2>Cookies e rastreamento</h2>
     <p>
       Este site <b>não usa cookies de publicidade nem rastreadores de terceiros</b>.
@@ -203,6 +245,53 @@
     </div>
   </div>
 </footer>
+
+<script>
+if (['localhost','127.0.0.1'].includes(location.hostname) ||
+    /\.trycloudflare\.com$/.test(location.hostname))
+  document.write('<scr'+'ipt src="assets/js/config.local.js"></scr'+'ipt>');
+</script>
+<script src="assets/js/banco.js"></script>
+<script>
+/* Descadastramento: a única página do site que precisa de JS próprio.
+   Sem banco ligado, o botão não mente — diz que não dá para processar agora
+   e manda a pessoa para um canal humano. */
+(() => {
+  const f = document.getElementById('form-saida');
+  if (!f) return;
+  const msg = document.getElementById('saida-msg');
+  const btn = document.getElementById('btn-saida');
+  const dizer = (txt, erro) => {
+    msg.textContent = txt;
+    msg.hidden = false;
+    msg.classList.toggle('saida__aviso--erro', Boolean(erro));
+  };
+
+  f.addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const zap = (f.whatsapp.value || '').replace(/\D/g, '');
+    if (!/^[0-9]{10,13}$/.test(zap))
+      return dizer('Escreva o número com DDD, só os dígitos. Ex.: 12999998888', true);
+
+    btn.disabled = true; btn.textContent = 'Registrando…';
+    try {
+      await window.VT_BANCO.descadastrar(zap);
+      /* Resposta igual para número cadastrado e não cadastrado, de propósito —
+         a mesma decisão que está na função do banco: dizer "não encontrei"
+         deixaria qualquer um descobrir quem apoia a campanha. */
+      dizer('Pronto. A partir de agora ninguém da campanha vai te procurar por '
+          + 'esse número. Se você quiser a exclusão completa dos seus dados, '
+          + 'peça pelos canais acima.');
+      f.reset();
+    } catch (e) {
+      dizer('Não consegui registrar agora (' + e.message + '). Fale com a equipe '
+          + 'pelos canais acima — o pedido vale do mesmo jeito.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Parar de receber contato';
+    }
+  });
+})();
+</script>
 
 </body>
 </html>

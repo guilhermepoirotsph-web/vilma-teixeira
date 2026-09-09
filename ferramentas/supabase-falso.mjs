@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /* ============================================================================
    supabase-falso.mjs — Supabase de mentira em cima de um Postgres de verdade.
 
@@ -36,7 +36,9 @@ await db.exec(`
   grant usage on schema auth to anon, authenticated;
 `);
 
-await db.exec(await readFile(join(RAIZ, 'banco', 'schema.sql'), 'utf8'));
+/* os dois arquivos, na mesma ordem em que vão ser colados no SQL Editor */
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql'])
+  await db.exec(await readFile(join(RAIZ, 'banco', arq), 'utf8'));
 await db.exec(`
   alter table public.perfis        force row level security;
   alter table public.eventos       force row level security;
