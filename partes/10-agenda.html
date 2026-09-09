@@ -1,0 +1,58 @@
+<section class="secao claro agenda" id="agenda">
+  <div class="wrap">
+
+    <div class="agenda__cabeca">
+      <div>
+        <p class="olho revelar">Agenda pública</p>
+        <h2 class="h1 revelar">Onde a Vilma<br><span class="grifo">vai estar</span></h2>
+        <p class="lead revelar mt-2">
+          Comício, caminhada, reunião de bairro, live. Se está aqui, é aberto —
+          chegue, puxe conversa, cobre.
+        </p>
+      </div>
+      <div class="agenda__hoje revelar" aria-hidden="true">
+        <span class="agenda__hojerot">Hoje</span>
+        <b class="agenda__hojedia" id="agenda-hoje-dia">—</b>
+        <span class="agenda__hojemes" id="agenda-hoje-mes">—</span>
+      </div>
+    </div>
+
+    <div class="agenda__filtros" id="agenda-filtros" role="group" aria-label="Filtrar agenda por tipo">
+      <button class="chip chip--on" data-f="todos">Tudo</button>
+      <button class="chip" data-f="comicio">Comício</button>
+      <button class="chip" data-f="caminhada">Caminhada</button>
+      <button class="chip" data-f="carreata">Carreata</button>
+      <button class="chip" data-f="reuniao">Reunião</button>
+      <button class="chip" data-f="visita">Visita</button>
+      <button class="chip" data-f="live">Live</button>
+    </div>
+
+    <div class="agenda__lista" id="agenda-lista" aria-live="polite">
+      <!-- preenchido por assets/js/secoes/agenda.js -->
+      <div class="agenda__carregando">
+        <span class="spin" aria-hidden="true"></span> Carregando a agenda…
+      </div>
+    </div>
+
+    <div class="agenda__vazio" id="agenda-vazio" hidden>
+      <div class="agenda__vazioico" aria-hidden="true">
+        <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <rect x="9" y="14" width="46" height="42" rx="7"/><path d="M9 26h46M21 8v10M43 8v10"/>
+          <path d="M23 40h18" opacity=".55"/>
+        </svg>
+      </div>
+      <h3 class="h3">Agenda sendo montada</h3>
+      <p class="lead mt-1" style="margin-inline:auto">
+        Os próximos compromissos entram aqui assim que a assessoria publicar.
+        Quer ser avisado? Deixe seu contato logo abaixo.
+      </p>
+      <a class="btn mt-3" href="#apoie">Quero ser avisado</a>
+    </div>
+
+    <p class="miudo agenda__nota mt-3">
+      Agenda mantida pela assessoria da vereadora. Compromissos podem mudar —
+      confirme pelo WhatsApp antes de sair de casa.
+    </p>
+
+  </div>
+</section>

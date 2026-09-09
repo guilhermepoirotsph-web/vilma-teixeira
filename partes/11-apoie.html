@@ -1,0 +1,195 @@
+<section class="secao apoie" id="apoie">
+  <div class="brilho brilho--magenta" style="width:56vw;height:56vw;left:-18vw;bottom:-20vw;opacity:.38"></div>
+  <div class="brilho brilho--royal" style="width:50vw;height:50vw;right:-16vw;top:-14vw;opacity:.42"></div>
+  <div class="grao" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="apoie__caixa">
+
+      <!-- --------------------------------------------------- lado texto -->
+      <div class="apoie__pitch">
+        <p class="olho olho--magenta revelar">Some com a gente</p>
+        <h2 class="h1 revelar">Campanha se faz<br><span class="grifo">de gente.</span></h2>
+        <p class="lead revelar mt-2">
+          Não precisa de palanque. Precisa de você contando pra três pessoas
+          por que Caraguá merece ser lembrada em São Paulo e em Brasília.
+        </p>
+
+        <ul class="apoie__lista revelar">
+          <li><b>1.</b> Deixe seu contato — leva menos de um minuto.</li>
+          <li><b>2.</b> A equipe te chama no WhatsApp com o material.</li>
+          <li><b>3.</b> Você espalha do seu jeito, no seu bairro.</li>
+        </ul>
+
+        <div class="apoie__numeros revelar" aria-hidden="true">
+          <div class="cola cola--azul"><span>Federal</span><b class="tab-num" data-num="cezinha">2223</b><small data-vt="cezinha.nome">Cezinha de Madureira</small></div>
+          <div class="cola cola--magenta"><span>Estadual</span><b class="tab-num" data-num="regina">15115</b><small data-vt="regina.nome">Regina Nunes</small></div>
+        </div>
+      </div>
+
+      <!-- ------------------------------------------------------ o form -->
+      <!-- sem .revelar: quem anima é apoie.js -->
+      <div class="apoie__form-wrap">
+        <form class="form" id="form-apoio" novalidate>
+
+          <div class="form__passos" aria-hidden="true">
+            <span class="form__passo on" data-p="1"><i>1</i> Você</span>
+            <span class="form__passo" data-p="2"><i>2</i> Como ajuda</span>
+            <span class="form__passo" data-p="3"><i>3</i> Confirmar</span>
+            <span class="form__barra"><i id="form-barra"></i></span>
+          </div>
+
+          <!-- ============================================= PASSO 1 -->
+          <fieldset class="form__tela on" data-tela="1">
+            <legend class="form__legenda">Pra gente te chamar pelo nome</legend>
+
+            <label class="campo">
+              <span class="campo__rot">Nome completo <b>*</b></span>
+              <input class="campo__in" type="text" name="nome" autocomplete="name"
+                     placeholder="Maria da Silva" required maxlength="120">
+              <span class="campo__erro"></span>
+            </label>
+
+            <label class="campo">
+              <span class="campo__rot">WhatsApp <b>*</b></span>
+              <input class="campo__in" type="tel" name="whatsapp" inputmode="numeric"
+                     autocomplete="tel-national" placeholder="(12) 99999-9999" required>
+              <span class="campo__dica">É por aqui que a equipe manda o material.</span>
+              <span class="campo__erro"></span>
+            </label>
+
+            <label class="campo">
+              <span class="campo__rot">Seu bairro <b>*</b></span>
+              <select class="campo__in" name="bairro" required>
+                <option value="">Escolha o bairro…</option>
+              </select>
+              <span class="campo__erro"></span>
+            </label>
+
+            <label class="campo">
+              <span class="campo__rot">E-mail <em>(opcional)</em></span>
+              <input class="campo__in" type="email" name="email" autocomplete="email"
+                     placeholder="voce@email.com" maxlength="140">
+              <span class="campo__erro"></span>
+            </label>
+
+            <div class="form__acoes">
+              <button type="button" class="btn btn--g" data-ir="2">Continuar</button>
+            </div>
+          </fieldset>
+
+          <!-- ============================================= PASSO 2 -->
+          <fieldset class="form__tela" data-tela="2">
+            <legend class="form__legenda">Como você quer somar?</legend>
+            <p class="miudo" style="margin:-6px 0 16px">Pode marcar quantas quiser. Ou nenhuma — acompanhar já ajuda.</p>
+
+            <div class="opcoes" id="opcoes-ajuda">
+              <label class="opcao"><input type="checkbox" name="ajuda" value="divulgar"><span>Divulgar nas minhas redes</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="adesivo"><span>Colar adesivo no carro</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="panfletar"><span>Panfletar no meu bairro</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="reuniao"><span>Ceder espaço pra reunião</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="levar"><span>Levar amigos pra votar</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="evento"><span>Ajudar em evento/comício</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="acompanhar"><span>Só quero acompanhar</span></label>
+            </div>
+
+            <label class="campo mt-3">
+              <span class="campo__rot">Quer deixar um recado pra Vilma? <em>(opcional)</em></span>
+              <textarea class="campo__in" name="recado" rows="3" maxlength="600"
+                        placeholder="Um problema do bairro, uma ideia, um obrigado…"></textarea>
+            </label>
+
+            <div class="form__acoes">
+              <button type="button" class="btn btn--vazado" data-ir="1">Voltar</button>
+              <button type="button" class="btn btn--g" data-ir="3">Continuar</button>
+            </div>
+          </fieldset>
+
+          <!-- ============================================= PASSO 3 -->
+          <fieldset class="form__tela" data-tela="3">
+            <legend class="form__legenda">Fechar com chave de ouro</legend>
+
+            <div class="compromisso">
+              <p class="compromisso__rot">
+                Quer declarar seu apoio aos números? <em>(totalmente opcional)</em>
+              </p>
+              <div class="compromisso__itens">
+                <label class="voto-op voto-op--azul">
+                  <input type="checkbox" name="apoio" value="2223">
+                  <span class="voto-op__num tab-num" data-num="cezinha">2223</span>
+                  <span class="voto-op__txt"><b>Cezinha de Madureira</b>Deputado Federal</span>
+                </label>
+                <label class="voto-op voto-op--magenta">
+                  <input type="checkbox" name="apoio" value="15115">
+                  <span class="voto-op__num tab-num" data-num="regina">15115</span>
+                  <span class="voto-op__txt"><b>Regina Nunes</b>Deputada Estadual</span>
+                </label>
+              </div>
+
+              <!-- consentimento ESPECÍFICO e DESTACADO para dado sensível (LGPD art. 11, I) -->
+              <label class="aceite aceite--destaque" id="aceite-sensivel" hidden>
+                <input type="checkbox" name="consente_apoio">
+                <span>
+                  <b>Consentimento específico:</b> autorizo a campanha a registrar a declaração
+                  de apoio que marquei acima. Entendo que <b>posicionamento político é dado
+                  pessoal sensível</b> e que posso revogar essa autorização quando quiser,
+                  pelo WhatsApp da campanha.
+                </span>
+              </label>
+            </div>
+
+            <label class="aceite">
+              <input type="checkbox" name="consente" required>
+              <span>
+                Autorizo a campanha de <b>Vilma Teixeira</b> a guardar meu nome, WhatsApp,
+                bairro, e-mail, como eu quero ajudar e o recado que eu escrever, para
+                <b>entrar em contato e organizar a campanha</b>.
+                Posso pedir a exclusão a qualquer momento.
+                <a href="privacidade.html" target="_blank" rel="noopener" class="link-t">Ver política de privacidade</a>.
+              </span>
+              <span class="campo__erro"></span>
+            </label>
+
+            <!-- honeypot anti-robô: humano nunca preenche -->
+            <div class="mel" aria-hidden="true">
+              <label>Não preencha este campo
+                <input type="text" name="apelido_site" tabindex="-1" autocomplete="off">
+              </label>
+            </div>
+
+            <div class="form__acoes">
+              <button type="button" class="btn btn--vazado" data-ir="2">Voltar</button>
+              <button type="submit" class="btn btn--g btn--ouro" id="form-enviar">
+                <span>Quero somar</span>
+              </button>
+            </div>
+
+            <p class="miudo mt-2">
+              Não pedimos CPF, título de eleitor nem documento. Nunca vamos pedir.
+            </p>
+          </fieldset>
+
+          <!-- ============================================= SUCESSO -->
+          <div class="form__ok" id="form-ok" hidden>
+            <div class="form__okico" aria-hidden="true">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 33l11 11 21-24" class="tick"/>
+              </svg>
+            </div>
+            <h3 class="h2">Você está dentro!</h3>
+            <p class="lead mt-1" id="form-ok-msg">
+              Obrigada por somar com a gente. A equipe da Vilma vai te chamar no WhatsApp.
+            </p>
+            <div class="btn-linha btn-linha--centro mt-3">
+              <a class="btn btn--zap" id="form-ok-wa" href="#" target="_blank" rel="noopener">Falar agora no WhatsApp</a>
+              <button type="button" class="btn btn--vazado" id="form-outro">Cadastrar outra pessoa</button>
+            </div>
+          </div>
+
+          <p class="form__erro" id="form-erro" hidden role="alert"></p>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>

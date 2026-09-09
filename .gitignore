@@ -1,0 +1,54 @@
+# ============================================================================
+#  O repositório guarda TUDO: schema do banco, provas, ferramentas e a
+#  documentação. Quem decide o que vai ao ar é o `publicar.mjs`, que monta a
+#  pasta `_site/` com só os arquivos que o navegador precisa.
+#
+#  Por que assim: se o repositório fosse o próprio site, `banco/schema.sql` e
+#  `docs/DADOS.md` ficariam acessíveis por URL — as regras de segurança e a
+#  fonte de dados servidas como arquivo estático. E se, para evitar isso, eles
+#  ficassem de fora do git, o trabalho mais importante do projeto viveria só
+#  neste computador.
+# ============================================================================
+
+# dependências — reinstaláveis pelo package-lock.json
+node_modules/
+
+# gerado por comando: não vale versionar
+_site/
+
+# capturas de conferência (dezenas de MB de PNG, geradas por ferramenta)
+caps/
+
+# apontam para o banco de teste local; mudam a cada túnel
+**/config.local.js
+
+# Material de referência interna. O `_` é a marca disso, e ele fica FORA do git
+# porque o repositório é público: a cópia da página da Câmara traz e-mail de
+# servidor, e os retratos oficiais são justamente a "estrutura de mandato" que o
+# rodapé do site jura não usar. A procedência de cada um está em docs/DADOS.md.
+fotos/_*
+
+# ────────────────────────────────────── segredos: nunca, em nenhuma hipótese
+SENHAS-NAO-COMITAR.txt
+*.env
+.env*
+*.pem
+*.key
+
+# ────────────────────────────────────────────────────────── ruído de sistema
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# ============================================================================
+#  Fica versionado de propósito (e NÃO vai ao ar — ver publicar.mjs):
+#    banco/        schema, migrações e as provas em Postgres real
+#    docs/         DADOS.md é a fonte única de verdade dos fatos do site
+#    ferramentas/  as baterias de prova e os utilitários
+#    n8n/          os fluxos de automação, em JSON
+#    montar.mjs · publicar.mjs · preview-server.mjs · virar-dominio.mjs
+#    fotos/_*      material de referência interna (o `_` é a marca disso)
+#
+#  index.html é GERADO por montar.mjs, mas fica versionado: é ele que a
+#  hospedagem serve, e ver o diff dele já pegou regressão mais de uma vez.
+# ============================================================================

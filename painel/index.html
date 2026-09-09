@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Painel · Vereadora Vilma Teixeira</title>
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#04122b">
+<link rel="icon" href="../assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&family=Great+Vibes&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="painel.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════ LOGIN ══ -->
+<div class="tela-login" id="tela-login">
+  <div class="login__fundo" aria-hidden="true"></div>
+  <form class="login" id="form-login" autocomplete="on">
+    <div class="login__marca">
+      <span class="login__nome">Vilma</span>
+      <span class="login__sub">Painel da equipe</span>
+    </div>
+
+    <label class="campo">
+      <span class="campo__rot">E-mail</span>
+      <input class="campo__in" type="email" name="email" autocomplete="username"
+             placeholder="voce@email.com" required>
+    </label>
+
+    <label class="campo">
+      <span class="campo__rot">Senha</span>
+      <input class="campo__in" type="password" name="senha" autocomplete="current-password"
+             placeholder="••••••••" required minlength="6">
+    </label>
+
+    <button class="btn btn--g" type="submit" id="btn-entrar">Entrar</button>
+    <button class="link-fraco" type="button" id="btn-esqueci">Esqueci minha senha</button>
+
+    <p class="aviso" id="login-erro" hidden role="alert"></p>
+    <p class="aviso aviso--ok" id="login-ok" hidden role="status"></p>
+
+    <p class="login__pe">
+      Área restrita da equipe. Acesso individual — não compartilhe sua senha.
+    </p>
+  </form>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════ APP ══ -->
+<div class="app" id="app" hidden>
+
+  <!-- ------------------------------------------------------ topo ---- -->
+  <header class="topo">
+    <button class="topo__burger" id="topo-burger" aria-label="Abrir menu" aria-expanded="false">
+      <i></i><i></i><i></i>
+    </button>
+    <div class="topo__marca">
+      <span class="topo__nome">Vilma</span>
+      <span class="topo__sub" id="topo-papel">—</span>
+    </div>
+    <div class="topo__dir">
+      <a class="topo__site" href="../index.html" target="_blank" rel="noopener">Ver o site ↗</a>
+      <div class="topo__eu">
+        <span class="topo__avatar" id="topo-avatar">?</span>
+        <span class="topo__quem" id="topo-quem">—</span>
+      </div>
+      <button class="btn btn--fraco btn--p" id="btn-sair">Sair</button>
+    </div>
+  </header>
+
+  <!-- ------------------------------------------------------ menu ---- -->
+  <nav class="lado" id="lado" aria-label="Seções do painel">
+    <a class="lado__it" data-rota="agenda" href="#agenda">
+      <span class="lado__ico" data-i="agenda"></span> Agenda
+      <b class="lado__badge" id="badge-agenda"></b>
+    </a>
+    <a class="lado__it" data-rota="apoiadores" href="#apoiadores" data-papel="admin,assessora">
+      <span class="lado__ico" data-i="pessoas"></span> Apoiadores
+      <b class="lado__badge" id="badge-apoiadores"></b>
+    </a>
+    <a class="lado__it" data-rota="conteudo" href="#conteudo" data-papel="admin,social">
+      <span class="lado__ico" data-i="conteudo"></span> Conteúdo
+      <b class="lado__badge" id="badge-conteudo"></b>
+    </a>
+    <a class="lado__it" data-rota="site" href="#site" data-papel="admin,social">
+      <span class="lado__ico" data-i="site"></span> Site
+      <b class="lado__badge" id="badge-site"></b>
+    </a>
+    <div class="lado__sep"></div>
+    <a class="lado__it" data-rota="ajuda" href="#ajuda">
+      <span class="lado__ico" data-i="ajuda"></span> Como usar
+    </a>
+  </nav>
+
+  <main class="miolo" id="miolo">
+
+    <!-- ═══════════════════════════════════════════════════ AGENDA ══ -->
+    <section class="rota" data-rota="agenda" hidden>
+      <div class="cab">
+        <div>
+          <h1 class="cab__t">Agenda da Vilma</h1>
+          <p class="cab__d">São <b>duas agendas no mesmo calendário</b>:
+             a <b>pública</b>, que aparece no site para qualquer pessoa, e a
+             <b>interna</b>, que fica só aqui com você. Use o seletor ao lado
+             para ver uma de cada vez.</p>
+        </div>
+        <button class="btn btn--g" id="novo-evento">+ Novo compromisso</button>
+      </div>
+
+      <div class="agenda-topo">
+        <div class="mes-nav">
+          <button class="mes-btn" id="mes-ant" aria-label="Mês anterior">‹</button>
+          <h2 class="mes-nome" id="mes-nome">—</h2>
+          <button class="mes-btn" id="mes-prox" aria-label="Próximo mês">›</button>
+          <button class="btn btn--fraco btn--p" id="mes-hoje">Hoje</button>
+        </div>
+        <div class="agenda-topo__dir">
+          <div class="segm segm--escopo" id="agenda-escopo" role="group" aria-label="Qual agenda mostrar">
+            <button class="segm__b segm__b--on" data-e="tudo">Tudo</button>
+            <button class="segm__b" data-e="publica">
+              <span class="segm__pt segm__pt--verde" aria-hidden="true"></span>Pública
+            </button>
+            <button class="segm__b" data-e="interna">
+              <span class="segm__pt segm__pt--ouro" aria-hidden="true"></span>Interna
+            </button>
+          </div>
+          <div class="segm" id="agenda-visao" role="group" aria-label="Modo de visualização">
+            <button class="segm__b segm__b--on" data-v="mes">Mês</button>
+            <button class="segm__b" data-v="lista">Lista</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="agenda-nota" id="agenda-nota" hidden></p>
+
+      <!-- calendário -->
+      <div class="cal" id="cal">
+        <div class="cal__sem" aria-hidden="true">
+          <span>dom</span><span>seg</span><span>ter</span><span>qua</span>
+          <span>qui</span><span>sex</span><span>sáb</span>
+        </div>
+        <div class="cal__grade" id="cal-grade"></div>
+      </div>
+
+      <!-- lista -->
+      <div class="lista-ev" id="lista-ev" hidden></div>
+
+      <p class="vazio" id="agenda-vazia" hidden>
+        Nada neste mês nesta visão. Troque o seletor para <b>Tudo</b> ou clique em
+        <b>+ Novo compromisso</b> para começar.
+      </p>
+    </section>
+
+    <!-- ══════════════════════════════════════════════ APOIADORES ══ -->
+    <section class="rota" data-rota="apoiadores" hidden>
+      <div class="cab">
+        <div>
+          <h1 class="cab__t">Apoiadores</h1>
+          <p class="cab__d">Quem se cadastrou pelo site. Dado pessoal — trate com cuidado
+             e não repasse para fora da campanha.</p>
+        </div>
+        <button class="btn btn--fraco" id="exportar-csv">Baixar CSV</button>
+      </div>
+
+      <div class="cartoes" id="apoio-numeros"></div>
+
+      <div class="filtros">
+        <input class="campo__in busca" id="apoio-busca" type="search"
+               placeholder="Buscar por nome, bairro ou WhatsApp…" aria-label="Buscar apoiador">
+        <select class="campo__in" id="apoio-status" aria-label="Filtrar por situação">
+          <option value="">Todas as situações</option>
+          <option value="novo">Novo</option>
+          <option value="contatado">Contatado</option>
+          <option value="engajado">Engajado</option>
+          <option value="voluntario">Voluntário</option>
+          <option value="descartado">Descartado</option>
+        </select>
+        <select class="campo__in" id="apoio-bairro" aria-label="Filtrar por bairro">
+          <option value="">Todos os bairros</option>
+        </select>
+      </div>
+
+      <div class="tabela-wrap">
+        <table class="tabela" id="tabela-apoio">
+          <thead>
+            <tr>
+              <th>Nome</th><th>WhatsApp</th><th>Bairro</th>
+              <th>Quer ajudar com</th><th>Apoio</th><th>Situação</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="corpo-apoio"></tbody>
+        </table>
+      </div>
+      <p class="vazio" id="apoio-vazio" hidden>Nenhum apoiador ainda.</p>
+    </section>
+
+    <!-- ═════════════════════════════════════════════════ CONTEÚDO ══ -->
+    <section class="rota" data-rota="conteudo" hidden>
+      <div class="cab">
+        <div>
+          <h1 class="cab__t">Calendário editorial</h1>
+          <p class="cab__d">Da ideia ao post publicado. Arraste o card ou use o
+             seletor para mudar de coluna.</p>
+        </div>
+        <button class="btn btn--g" id="novo-conteudo">+ Nova pauta</button>
+      </div>
+
+      <div class="kanban" id="kanban"></div>
+      <p class="vazio" id="conteudo-vazio" hidden>
+        Nenhuma pauta ainda. Clique em <b>+ Nova pauta</b> para começar.
+      </p>
+    </section>
+
+    <!-- ═════════════════════════════════════════════ SITE (lacunas) ══ -->
+    <section class="rota" data-rota="site" hidden>
+      <div class="cab">
+        <div>
+          <h1 class="cab__t">Conteúdo do site</h1>
+          <p class="cab__d">Aqui você alimenta o site sem mexer em código: trocar o vídeo
+             em destaque, ajustar textos, nomes, números e fotos. <b>Salva sozinho</b> ao
+             sair do campo — e some do ar em segundos.</p>
+        </div>
+        <a class="btn btn--fraco" href="../index.html" target="_blank" rel="noopener">Abrir o site ↗</a>
+      </div>
+      <div class="grupos" id="grupos-site"></div>
+      <p class="vazio" id="site-vazio" hidden>
+        Nada para editar — o banco ainda não foi ligado.
+      </p>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════ AJUDA ══ -->
+    <section class="rota" data-rota="ajuda" hidden>
+      <div class="cab"><div><h1 class="cab__t">Como usar o painel</h1></div></div>
+      <div class="ajuda" id="ajuda-conteudo"></div>
+    </section>
+
+    <!-- sem permissão -->
+    <section class="rota" data-rota="negado" hidden>
+      <div class="vazio vazio--g">
+        <h2>Esta área não é do seu acesso</h2>
+        <p>Seu perfil não tem permissão para ver esta seção. Se precisar,
+           fale com quem administra o painel.</p>
+      </div>
+    </section>
+
+    <!-- perfil inerte -->
+    <section class="rota" data-rota="inativo" hidden>
+      <div class="vazio vazio--g">
+        <h2>Sua conta ainda não foi liberada</h2>
+        <p>Toda conta nova nasce sem acesso, por segurança. Peça para quem administra
+           o painel liberar o seu perfil e escolher a sua função.</p>
+        <p class="miudo" id="inativo-email"></p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ MODAL ══ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal__fundo" data-fechar></div>
+  <div class="modal__cx" role="dialog" aria-modal="true" aria-labelledby="modal-t">
+    <div class="modal__topo">
+      <h2 class="modal__t" id="modal-t">—</h2>
+      <button class="modal__x" data-fechar aria-label="Fechar">×</button>
+    </div>
+    <div class="modal__corpo" id="modal-corpo"></div>
+  </div>
+</div>
+
+<div class="aviso-flutua" id="toast" hidden role="status"></div>
+
+<!-- SÓ DESENVOLVIMENTO: se existir config.local.js, ele aponta para o banco de
+     teste. A tag só é criada em localhost, então em produção não há nem requisição. -->
+<script>
+if (['localhost','127.0.0.1'].includes(location.hostname) || /\.trycloudflare\.com$/.test(location.hostname))
+  document.write('<scr'+'ipt src="config.local.js"></scr'+'ipt>');
+</script>
+<script src="painel.js"></script>
+</body>
+</html>

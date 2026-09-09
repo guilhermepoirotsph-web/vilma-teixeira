@@ -1,0 +1,137 @@
+<section class="secao video" id="video">
+  <div class="video__luz" aria-hidden="true"></div>
+  <div class="brilho brilho--magenta" style="width:60vw;height:60vw;left:50%;top:-10vw;transform:translateX(-50%);opacity:.32"></div>
+  <div class="grao" aria-hidden="true"></div>
+
+  <div class="wrap wrap--largo">
+    <div class="cabeca cabeca--centro">
+      <p class="olho olho--centro revelar" style="justify-content:center">Ouça da boca dela</p>
+      <h2 class="h1 revelar">O recado da Vilma<br><span class="grifo">para Caraguá</span></h2>
+    </div>
+
+    <div class="video__palco" id="video-palco">
+
+      <figure class="video__moldura" id="video-moldura">
+        <div class="video__brilho" aria-hidden="true"></div>
+
+        <div class="video__slot" id="video-slot">
+          <!-- 1º: player próprio com SOM (aparece se midia/recado-vilma.mp4 existir) -->
+          <video class="video__player" id="video-player" playsinline preload="none" hidden
+                 aria-label="Recado da vereadora Vilma Teixeira"></video>
+
+          <!-- 2º: embed oficial do Instagram (carregado sob demanda) -->
+          <div class="video__espera" id="video-espera">
+            <div class="video__play" aria-hidden="true"><i></i></div>
+            <p class="miudo">Carregando o vídeo…</p>
+          </div>
+        </div>
+
+        <!-- botão que liga o som: navegador exige um toque, não tem como fugir -->
+        <button class="video__ouvir" id="video-ouvir" hidden>
+          <span class="video__ouvir-ico" aria-hidden="true"></span>
+          <span class="video__ouvir-txt">
+            <b>Ouvir o recado</b>
+            <small id="video-ouvir-sub">com som</small>
+          </span>
+        </button>
+
+        <div class="video__barra" id="video-barra" hidden aria-hidden="true"><i></i></div>
+
+        <div class="video__ctrl" id="video-ctrl" hidden>
+          <button class="video__btn" id="video-toggle" aria-label="Pausar">❚❚</button>
+          <button class="video__btn" id="video-som" aria-label="Desligar som" aria-pressed="true">♪</button>
+          <button class="video__btn video__btn--txt" id="video-repetir">Ver de novo</button>
+        </div>
+
+        <figcaption class="video__pe">
+          <span class="selo selo--magenta">Reel · <em data-vt="video.data" style="font-style:normal">31 de agosto de 2026</em></span>
+          <a class="link-t" href="https://www.instagram.com/p/Dcuqygpua5b/" data-vt-href="video.url" target="_blank" rel="noopener">
+            Abrir no Instagram ↗
+          </a>
+        </figcaption>
+      </figure>
+
+      <div class="video__fala">
+        <span class="video__aspas" aria-hidden="true">&ldquo;</span>
+
+        <!-- legenda sincronizada: entra quando existe o MP4 + transcrição -->
+        <div class="video__legendas" id="video-legendas" hidden aria-live="polite">
+          <p class="video__legenda-atual" id="video-legenda-atual"></p>
+        </div>
+
+        <blockquote class="video__legenda" id="video-legenda">
+          Caraguatatuba merece uma voz forte, preparada e comprometida com as pessoas.
+          Apoio <b>@reginanunessp</b> para Deputada Estadual. Vamos juntos construir um futuro
+          com mais trabalho, respeito e oportunidades para nossa cidade.
+          <b class="grifo">Vote 15115.</b>
+        </blockquote>
+
+        <p class="video__autor">— Vereadora Vilma Teixeira · <a href="https://www.instagram.com/vereadoravilma/" target="_blank" rel="noopener">@vereadoravilma</a></p>
+
+        <ul class="video__tags" aria-label="Hashtags do post">
+          <li>#ReginaNunes</li><li>#15115</li><li>#Caraguatatuba</li>
+          <li>#LitoralNorte</li><li>#SãoPaulo</li>
+        </ul>
+
+        <div class="btn-linha mt-3">
+          <a class="btn" href="#compromisso">O que ela defende</a>
+          <a class="btn btn--vazado" href="#urna">Simular meu voto</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================== COMPROMISSO: HOSPITAL VETERINÁRIO ================== -->
+  <div class="wrap" id="compromisso">
+    <article class="compro revelar">
+      <div class="compro__marca" aria-hidden="true">
+        <svg class="compro__ico" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M32 54s-17-10.5-17-23a10 10 0 0 1 17-7 10 10 0 0 1 17 7c0 12.5-17 23-17 23z"/>
+          <path d="M32 27v12M26 33h12"/>
+        </svg>
+      </div>
+
+      <div class="compro__corpo">
+        <span class="selo">Proposta de campanha</span>
+        <h3 class="compro__t h2">Hospital veterinário<br><span class="grifo">público e gratuito</span></h3>
+        <p class="lead mt-2">
+          Quem tem bicho em casa sabe: quando adoece, ou tem dinheiro para a clínica,
+          ou não tem o que fazer. Caraguatatuba precisa de atendimento veterinário
+          público e gratuito — e de <b>castração de verdade</b>, que é o que resolve o
+          abandono na raiz.
+        </p>
+
+        <div class="compro__pilares">
+          <div class="compro__pilar">
+            <b>Atendimento gratuito</b>
+            <span>Consulta, exame e cirurgia para quem não tem como pagar clínica particular.</span>
+          </div>
+          <div class="compro__pilar">
+            <b>Castração como política</b>
+            <span>A bandeira central da Regina: castrar em escala é o que faz o abandono cair. Hospital sozinho enxuga gelo.</span>
+          </div>
+          <div class="compro__pilar">
+            <b>O modelo já existe</b>
+            <span>A cidade de São Paulo mantém uma rede de hospitais veterinários públicos — o 5º está em obras. Não é ideia solta: é política que já roda numa cidade grande.</span>
+          </div>
+        </div>
+
+        <p class="compro__fecho">
+          Não é favor. É política pública — e Caraguá só entra nessa conta
+          com quem defende a causa lá dentro.
+        </p>
+
+        <div class="btn-linha mt-3">
+          <a class="btn" href="#regina">Conhecer a Regina · 15115</a>
+          <a class="btn btn--vazado" href="#apoie">Quero somar com isso</a>
+        </div>
+
+        <p class="miudo compro__nota">
+          Proposta de campanha, não obra em andamento. A execução depende de
+          eleição, orçamento e da prefeitura de Caraguatatuba.
+        </p>
+      </div>
+    </article>
+  </div>
+</section>

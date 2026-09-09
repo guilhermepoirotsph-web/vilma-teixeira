@@ -1,0 +1,11 @@
+# PRÉVIA — o site ainda não está no domínio definitivo.
+# Na virada para vilmateixeira.com (registrado na Locaweb), trocar por:
+#
+#   User-agent: *
+#   Allow: /
+#   Disallow: /painel/
+#
+#   Sitemap: https://www.vilmateixeira.com/sitemap.xml
+#
+User-agent: *
+Disallow: /

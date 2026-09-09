@@ -1,0 +1,79 @@
+# ============================================================================
+#  Publica o site no GitHub Pages a cada push na main.
+#
+#  O repositório guarda tudo; a hospedagem recebe só `_site/`, montada pelo
+#  `publicar.mjs` — que também aborta se encontrar segredo no material.
+#  Antes de publicar, as provas do site rodam: build quebrado não vai ao ar.
+# ============================================================================
+name: Publicar site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:      # botão "Run workflow" na aba Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# uma publicação por vez; se chegar push novo no meio, o antigo é descartado
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  provar:
+    name: Provar antes de publicar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # o banco roda em PGlite: Postgres de verdade, sem serviço externo
+      - name: Provas do banco (RLS, papéis, LGPD)
+        run: node banco/provar-sql.mjs
+
+      # Chrome de verdade para as provas do site
+      - name: Instalar Chrome
+        uses: browser-actions/setup-chrome@v2
+        id: chrome
+        with:
+          chrome-version: stable
+
+      - name: Provas do site
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+        run: node ferramentas/provar.mjs
+
+      - name: Provas da publicação (pacote e rede de segredo)
+        run: node ferramentas/provar-publicacao.mjs
+
+  publicar:
+    name: Publicar no Pages
+    needs: provar
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Montar _site/
+        run: node publicar.mjs
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v5

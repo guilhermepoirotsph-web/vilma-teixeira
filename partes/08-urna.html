@@ -1,0 +1,112 @@
+<section class="secao urna" id="urna">
+  <div class="brilho brilho--ouro" style="width:50vw;height:50vw;left:50%;top:6vw;transform:translateX(-50%);opacity:.2"></div>
+
+  <div class="wrap">
+    <div class="cabeca cabeca--centro">
+      <p class="olho olho--centro revelar" style="justify-content:center">Treine agora</p>
+      <h2 class="h1 revelar">Chegou na urna,<br><span class="grifo-ouro">não pode esquecer.</span></h2>
+      <p class="lead revelar mt-2" style="margin-inline:auto">
+        Digite <b>2223</b> para Deputado Federal e <b>15115</b> para Deputada Estadual.
+        É só treino — nada é registrado e ninguém está te vendo.
+      </p>
+    </div>
+
+    <!-- sem .revelar: quem anima é urna.js (from + .revelar = fica invisível) -->
+    <div class="urna__cena">
+
+      <div class="urna__maquina" id="urna-maquina" role="group" aria-label="Simulador de urna eletrônica">
+        <span class="urna__marca">SIMULADOR · TREINO</span>
+
+        <!-- ---------------------------------------------------- TELA -->
+        <div class="urna__tela">
+          <div class="lcd" id="lcd" data-fase="federal">
+
+            <div class="lcd__topo">
+              <span class="lcd__cargo" id="lcd-cargo">DEPUTADO FEDERAL</span>
+              <span class="lcd__passo" id="lcd-passo">1 de 2</span>
+            </div>
+
+            <div class="lcd__linha">
+              <span class="lcd__rot">Número:</span>
+              <div class="lcd__digitos" id="lcd-digitos" aria-live="polite"></div>
+            </div>
+
+            <div class="lcd__ficha" id="lcd-ficha" hidden>
+              <div class="lcd__retrato" id="lcd-retrato" aria-hidden="true"></div>
+              <dl class="lcd__dados">
+                <div><dt>Nome:</dt><dd id="lcd-nome">—</dd></div>
+                <div><dt>Partido:</dt><dd id="lcd-partido">—</dd></div>
+                <div><dt>Cargo:</dt><dd id="lcd-cargofic">—</dd></div>
+              </dl>
+            </div>
+
+            <div class="lcd__aviso" id="lcd-aviso" hidden>
+              <b>NÚMERO NÃO CORRESPONDE</b> a nenhum candidato apoiado por esta página.
+              Aperte <b>CORRIGE</b> e tente 2223 ou 15115.
+            </div>
+
+            <div class="lcd__fim" id="lcd-fim" hidden>
+              <span class="lcd__fimtxt">FIM</span>
+              <p>Voto de treino registrado. Na hora de verdade é exatamente assim.</p>
+            </div>
+
+            <p class="lcd__pe" id="lcd-pe">
+              Aperte a tecla:<br>
+              <b>CONFIRMA</b> para confirmar este voto<br>
+              <b>CORRIGE</b> para digitar de novo
+            </p>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------- TECLADO -->
+        <div class="urna__teclado">
+          <div class="teclas" id="teclas-num">
+            <button class="tecla" data-t="1">1</button>
+            <button class="tecla" data-t="2">2</button>
+            <button class="tecla" data-t="3">3</button>
+            <button class="tecla" data-t="4">4</button>
+            <button class="tecla" data-t="5">5</button>
+            <button class="tecla" data-t="6">6</button>
+            <button class="tecla" data-t="7">7</button>
+            <button class="tecla" data-t="8">8</button>
+            <button class="tecla" data-t="9">9</button>
+            <button class="tecla tecla--vazia" disabled aria-hidden="true"></button>
+            <button class="tecla" data-t="0">0</button>
+            <button class="tecla tecla--vazia" disabled aria-hidden="true"></button>
+          </div>
+          <div class="teclas-acao">
+            <button class="tecla tecla--branco"  data-a="branco">BRANCO</button>
+            <button class="tecla tecla--corrige" data-a="corrige">CORRIGE</button>
+            <button class="tecla tecla--confirma" data-a="confirma">CONFIRMA</button>
+          </div>
+        </div>
+
+        <div class="urna__som">
+          <button class="urna__somtoggle" id="urna-som" aria-pressed="true">
+            <span class="urna__somico" aria-hidden="true"></span> Som do teclado
+          </button>
+        </div>
+      </div>
+
+      <aside class="urna__ajuda">
+        <h3 class="h4">Como votar</h3>
+        <ol class="urna__passos">
+          <li><b>Deputado Federal</b> vem primeiro — 4 números: <b class="tab-num">2223</b></li>
+          <li>Confira o nome na tela e aperte <b>CONFIRMA</b></li>
+          <li><b>Deputada Estadual</b> — 5 números: <b class="tab-num">15115</b></li>
+          <li>Confira e aperte <b>CONFIRMA</b> de novo</li>
+        </ol>
+        <div class="urna__cola">
+          <div class="cola cola--azul"><span>Federal</span><b class="tab-num" data-num="cezinha">2223</b><small data-vt="cezinha.nome">Cezinha de Madureira</small></div>
+          <div class="cola cola--magenta"><span>Estadual</span><b class="tab-num" data-num="regina">15115</b><small data-vt="regina.nome">Regina Nunes</small></div>
+        </div>
+        <p class="miudo mt-2">
+          Simulação educativa, sem qualquer vínculo com a Justiça Eleitoral.
+          Nenhum dado é gravado neste simulador.
+        </p>
+        <a class="btn btn--ouro mt-2" href="#apoie" style="width:100%">Já sei meus números — quero apoiar</a>
+      </aside>
+
+    </div>
+  </div>
+</section>

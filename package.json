@@ -1,0 +1,32 @@
+{
+  "name": "vilma-teixeira-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site de campanha da Vereadora Vilma Teixeira + painel da assessoria e do social media",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": { "doc": "docs" },
+  "scripts": {
+    "montar": "node montar.mjs",
+    "previa": "node preview-server.mjs",
+    "publicar": "node publicar.mjs",
+    "virar": "node virar-dominio.mjs",
+    "og": "node ferramentas/gerar-og.mjs",
+    "capturar": "node ferramentas/capturar.mjs",
+    "capturar:mobile": "node ferramentas/capturar.mjs --largura=390 --altura=844",
+    "banco:falso": "node ferramentas/supabase-falso.mjs",
+    "semear": "node ferramentas/semear-previa.mjs",
+    "provar:site": "node ferramentas/provar.mjs",
+    "provar:banco": "node banco/provar-sql.mjs",
+    "provar:painel": "node ferramentas/provar-painel.mjs",
+    "provar:publicacao": "node ferramentas/provar-publicacao.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.11",
+    "puppeteer-core": "^25.10.0",
+    "three": "^0.185.0"
+  }
+}

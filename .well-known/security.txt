@@ -1,0 +1,7 @@
+# Encontrou uma falha de segurança neste site? Avise antes de divulgar.
+# Found a security issue? Please report it before disclosing.
+
+Contact: https://www.gdstudiox.com.br
+Contact: mailto:gdstudiox6@gmail.com
+Preferred-Languages: pt-BR, en
+Expires: 2027-09-09T00:00:00.000Z
