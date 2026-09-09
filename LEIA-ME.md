@@ -172,13 +172,21 @@ liberar **qualquer um pode registrar, inclusive adversário**. Vale acompanhar e
   apex `@` → quatro registros **A**: `185.199.108.153`, `185.199.109.153`,
   `185.199.110.153`, `185.199.111.153`
   `www` → **CNAME** `guilhermepoirotsph-web.github.io.` (com o ponto no fim)
-  **Ordem que importa:** DNS primeiro, arquivo `CNAME` no repo depois — se inverter, o
-  Pages passa a atender só no domínio novo e o `github.io` sai do ar até propagar.
 - **Hospedagem da própria Locaweb**: se você já tem plano lá, é só subir a pasta por FTP —
   o site é estático, não precisa de PHP nem de banco para o front.
 
-Na virada, ainda falta: tirar o `noindex` do `partes/_molde.html`, liberar o
-`robots.txt` (já tem o texto pronto comentado dentro) e remontar com `node montar.mjs`.
+**Ordem que importa — e aqui o padrão da casa estava errado.** A regra antiga era
+"DNS primeiro, arquivo `CNAME` depois". Ela vale para Pages publicando direto de uma
+branch. **Aqui a publicação é por GitHub Actions, e a documentação do GitHub é
+explícita: com Actions o arquivo `CNAME` é ignorado.** Quem amarra o domínio é
+**Settings → Pages → Custom domain**, e a ordem certa é reivindicar o domínio no
+GitHub **antes** do DNS — o próprio GitHub avisa que apontar o DNS primeiro abre uma
+janela em que outra pessoa pode hospedar um site nesse subdomínio.
+
+O passo a passo completo da virada está em **[LANCAR.md](LANCAR.md), bloco 4**, e
+`node virar-dominio.mjs` faz a parte do código de uma vez (noindex, canonical, og:url,
+imagens em URL absoluta, robots, sitemap, privacidade e remontagem), com `--reverter`
+para desfazer.
 
 ---
 

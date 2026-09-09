@@ -41,6 +41,16 @@ import { execFileSync } from 'node:child_process';
 
 const RAIZ = import.meta.dirname;
 const MOLDE = path.join(RAIZ, 'partes', '_molde.html');
+/* A política de privacidade não sai do molde: é página solta, com o head dela.
+   Sem tratá-la aqui, a virada gerava um sitemap anunciando uma página que
+   continuava dizendo "noindex" — o Google recebe as duas ordens e obedece a
+   restritiva, e a página que a LGPD manda ter fica invisível. */
+const PRIVACIDADE = path.join(RAIZ, 'privacidade.html');
+/* Âncora de inserção no head da privacidade: a linha da description, que
+   existe. Ancorar em `theme-color` (como o molde) falhava calado — a página
+   não tem essa meta, o replace não casava e ela voltava SEM o noindex. */
+const ANCORA = /^<meta name="description"[^>]*>$/m;
+const ROBOTS_PV = '\n<meta name="robots" content="noindex,nofollow">';
 const PADRAO = 'www.vilmateixeira.com';
 const args = process.argv.slice(2);
 const REVERTER = args.includes('--reverter');
@@ -96,6 +106,16 @@ if (REVERTER) {
       '<meta name="robots" content="noindex,nofollow">\n<meta property="og:type"');
   }
   gravar(MOLDE, m);
+
+  // a privacidade volta a ser prévia junto
+  let pv = ler(PRIVACIDADE);
+  pv = pv.replace(/^<link rel="canonical"[^>]*>\n/m, '');
+  if (!/name="robots"/.test(pv)) pv = pv.replace(ANCORA, m => m + ROBOTS_PV);
+  gravar(PRIVACIDADE, pv);
+  /Disallow|noindex/.test(pv)
+    ? feito.push('privacidade.html de volta para prévia')
+    : feito.push('⚠ privacidade.html ficou SEM noindex — confira o head à mão');
+
   gravar(path.join(RAIZ, 'robots.txt'), robotsPrevia);
   for (const f of ['CNAME', 'sitemap.xml']) {
     const alvo = path.join(RAIZ, f);
@@ -153,6 +173,21 @@ m = m.replace(/<!-- ============ CHECKLIST DE PUBLICAÇÃO[\s\S]*?==============
      Para voltar a ser prévia (noindex, sem CNAME): node virar-dominio.mjs --reverter -->`);
 
 gravar(MOLDE, m);
+
+// 5b. a política de privacidade é página solta e tem o head dela: sem isto o
+// sitemap anunciaria uma página que continua pedindo para não ser indexada
+{
+  let pv = ler(PRIVACIDADE);
+  pv = pv.replace(/\s*<meta name="robots" content="noindex,nofollow">\s*\n/, '\n');
+  const canonico = `<link rel="canonical" href="${BASE}/privacidade.html">`;
+  pv = /rel="canonical"/.test(pv)
+    ? pv.replace(/<link rel="canonical" href="[^"]*">/, canonico)
+    : pv.replace(ANCORA, m => m + '\n' + canonico);
+  gravar(PRIVACIDADE, pv);
+  (!/noindex/.test(pv) && pv.includes(canonico))
+    ? feito.push('privacidade.html liberada e com canonical')
+    : feito.push('⚠ privacidade.html NÃO ficou pronta — confira o head à mão');
+}
 
 // 6. CNAME — documenta a intenção; quem amarra é Settings → Pages (ver o topo)
 gravar(path.join(RAIZ, 'CNAME'), DOMINIO + '\n');

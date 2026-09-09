@@ -189,6 +189,74 @@ const publicar = args => {
     : bad('foto da Câmara no pacote', fotos.join(', '));
 }
 
+/* ───── 6 · a virada de domínio é coerente e reversível ─────────────── */
+{
+  /* Este bloco nasceu de um defeito real: o sitemap gerado anunciava
+     privacidade.html, que continuava com noindex no head dela — o Google
+     recebe as duas ordens e obedece a restritiva. A virada só é confiável se
+     alguém a rodar inteira de vez em quando; aqui ela roda a cada bateria. */
+  const virar = args => {
+    try {
+      execFileSync('node', [path.join(RAIZ, 'virar-dominio.mjs'), ...args],
+                   { cwd: RAIZ, encoding: 'utf8', stdio: 'pipe' });
+      return true;
+    } catch { return false; }
+  };
+  const ler = p => fs.readFileSync(path.join(RAIZ, p), 'utf8');
+  const antes = { molde: ler('partes/_molde.html'), pv: ler('privacidade.html'),
+                  robots: ler('robots.txt') };
+
+  try {
+    virar([]) ? ok('virar-dominio.mjs roda sem erro') : bad('virar-dominio.mjs falhou');
+
+    const sitemap = ler('sitemap.xml');
+    const paginas = [...sitemap.matchAll(/<loc>https?:\/\/[^/]+\/([^<]*)<\/loc>/g)]
+      .map(m => m[1] || 'index.html');
+    paginas.length >= 2 ? ok('sitemap lista as páginas indexáveis', paginas.join(', '))
+                        : bad('sitemap vazio ou incompleto', paginas.join(', '));
+
+    /* TODA página anunciada no sitemap tem que estar realmente liberada.
+       Procurar a palavra "noindex" solta dá falso positivo: ela aparece no
+       comentário que explica como reverter. O que vale é a META. */
+    const META_NOINDEX = /<meta\s+name=["']robots["'][^>]*noindex/i;
+    const contraditorias = paginas.filter(p =>
+      fs.existsSync(path.join(RAIZ, p)) && META_NOINDEX.test(ler(p)));
+    contraditorias.length === 0
+      ? ok('nenhuma página do sitemap continua pedindo noindex')
+      : bad('sitemap anuncia página com noindex', contraditorias.join(', '));
+
+    /* e cada uma precisa dizer qual é o endereço definitivo dela */
+    const semCanonical = paginas.filter(p =>
+      fs.existsSync(path.join(RAIZ, p)) && !/rel="canonical"/.test(ler(p)));
+    semCanonical.length === 0
+      ? ok('cada página do sitemap tem canonical')
+      : bad('página sem canonical', semCanonical.join(', '));
+
+    const rb = ler('robots.txt');
+    (/^Allow: \/$/m.test(rb) && /^Disallow: \/painel\/$/m.test(rb) && /^Sitemap: https/m.test(rb))
+      ? ok('robots liberado, com o painel fora dos buscadores e o sitemap apontado')
+      : bad('robots.txt incoerente depois da virada', rb.replace(/\n/g, ' | '));
+
+    /* as imagens de compartilhamento precisam virar absolutas: WhatsApp e
+       Facebook descartam caminho relativo e o link vai sem card */
+    /<meta property="og:image" content="https:\/\//.test(ler('partes/_molde.html'))
+      ? ok('og:image ficou em URL absoluta')
+      : bad('og:image continua relativa — link compartilhado fica sem card');
+  } finally {
+    virar(['--reverter']);
+  }
+
+  const depois = { molde: ler('partes/_molde.html'), pv: ler('privacidade.html'),
+                   robots: ler('robots.txt') };
+  const iguais = Object.keys(antes).every(k => antes[k] === depois[k]);
+  iguais ? ok('virar → reverter devolve tudo exatamente como estava')
+         : bad('a virada deixou resíduo',
+               Object.keys(antes).filter(k => antes[k] !== depois[k]).join(', '));
+  !fs.existsSync(path.join(RAIZ, 'sitemap.xml')) && !fs.existsSync(path.join(RAIZ, 'CNAME'))
+    ? ok('reverter apaga sitemap.xml e CNAME')
+    : bad('sobrou arquivo de produção depois de reverter');
+}
+
 const bons = provas.filter(p => p.ok).length;
 console.log('\n═══ PROVAS DA PUBLICAÇÃO ═══\n');
 provas.forEach(p => console.log(` ${p.ok ? '✓' : '✗'} ${p.n}${p.d ? '  → ' + p.d : ''}`));
