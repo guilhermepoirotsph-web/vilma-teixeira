@@ -6,7 +6,12 @@
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
 import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
+/* ⚠ Esta constante SOMBREIA a URL global — `new URL(...)` estoura com
+   "URL is not a constructor" em qualquer ponto deste arquivo. Use RAIZ. */
 const URL = (process.argv.find(a => a.startsWith('--url=')) || '').split('=')[1]
           || 'http://localhost:8803/';
 // CHROME_PATH deixa a mesma bateria rodar no Linux do GitHub Actions
@@ -380,6 +385,8 @@ const geral = await pg.evaluate(() => ({
   semAlt: [...document.images].filter(i => !i.alt && !i.getAttribute('aria-hidden')).length,
   overflowX: document.documentElement.scrollWidth - innerWidth,
   noindex: document.querySelector('meta[name=robots]')?.content || '',
+  canonical: document.querySelector('link[rel=canonical]')?.getAttribute('href') || '',
+  ogImagem: document.querySelector('meta[property="og:image"]')?.getAttribute('content') || '',
   rodapeResp: /Vilma Teixeira de Oliveira Santos/.test(document.querySelector('.rodape__legal')?.textContent || ''),
   numerosOk: /15115/.test(document.body.textContent) && /2223/.test(document.body.textContent),
   privacidade: Boolean(document.querySelector('a[href="privacidade.html"]')),
@@ -390,7 +397,30 @@ geral.overflowX <= 0 ? ok('sem vazamento horizontal') : bad('overflowX', geral.o
 geral.rodapeResp ? ok('rodapé identifica o responsável (art. 57-B)') : bad('rodapé sem identificação');
 geral.privacidade ? ok('link de privacidade presente') : bad('sem link de privacidade');
 geral.numerosOk ? ok('números 15115 e 2223 na página') : bad('faltou número na página');
-/noindex/.test(geral.noindex) ? ok('prévia com noindex') : bad('noindex ausente (ok só depois da virada)');
+/* O site tem DOIS estados legítimos — prévia e publicado — e a prova precisa
+   medir em qual ele está, não supor um deles. Exigir `noindex` sempre fazia a
+   bateria ficar vermelha no minuto seguinte à virada, bloqueando a Action
+   justamente na publicação que a virada existe para fazer. O sinal de estado é
+   o arquivo CNAME, que só existe depois de `node virar-dominio.mjs`. */
+{
+  const publicado = existsSync(join(RAIZ, 'CNAME'));
+  if (publicado) {
+    !/noindex/.test(geral.noindex)
+      ? ok('publicado: sem noindex, o Google pode indexar')
+      : bad('publicado mas ainda com noindex — o site fica invisível', geral.noindex);
+    /^https?:\/\//.test(geral.canonical)
+      ? ok('publicado: canonical absoluto', geral.canonical)
+      : bad('publicado sem canonical absoluto', geral.canonical || '(vazio)');
+    /* WhatsApp e Facebook descartam caminho relativo: o link vai sem card */
+    /^https?:\/\//.test(geral.ogImagem)
+      ? ok('publicado: og:image absoluta (o card aparece ao compartilhar)')
+      : bad('og:image relativa — link compartilhado fica sem card', geral.ogImagem || '(vazio)');
+  } else {
+    /noindex/.test(geral.noindex)
+      ? ok('prévia com noindex (ainda fora dos buscadores)')
+      : bad('prévia SEM noindex — o Google pode indexar o rascunho', geral.noindex || '(vazio)');
+  }
+}
 
 errosJS.length === 0 ? ok('zero erro de JavaScript') : bad('erros de JS', errosJS.join(' | ').slice(0, 300));
 
