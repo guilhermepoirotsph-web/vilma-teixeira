@@ -203,10 +203,33 @@ const publicar = args => {
     } catch { return false; }
   };
   const ler = p => fs.readFileSync(path.join(RAIZ, p), 'utf8');
-  const antes = { molde: ler('partes/_molde.html'), pv: ler('privacidade.html'),
-                  robots: ler('robots.txt') };
+
+  /* A prova mexe nos arquivos do projeto, então precisa devolvê-los EXATAMENTE
+     como estavam — e não pode supor que estavam em modo prévia. Depois que o
+     site vira para o domínio, a bateria continua rodando: confiar no
+     `--reverter` para restaurar levaria o projeto de volta para prévia sem
+     ninguém pedir, e a prova acusaria "resíduo" de um estado que ela mesma
+     criou. Foto do estado real primeiro; restauração literal no fim. */
+  const TOCADOS = ['partes/_molde.html', 'privacidade.html', 'robots.txt',
+                   'index.html', 'sitemap.xml', 'CNAME'];
+  const foto = Object.fromEntries(TOCADOS.map(p => {
+    const abs = path.join(RAIZ, p);
+    return [p, fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8') : null];
+  }));
+  const restaurar = () => {
+    for (const [p, conteudo] of Object.entries(foto)) {
+      const abs = path.join(RAIZ, p);
+      if (conteudo === null) fs.rmSync(abs, { force: true });
+      else fs.writeFileSync(abs, conteudo, 'utf8');
+    }
+  };
 
   try {
+    /* o ciclo só faz sentido a partir da prévia: começa garantindo esse ponto */
+    virar(['--reverter']);
+    const previa = { molde: ler('partes/_molde.html'), pv: ler('privacidade.html'),
+                     robots: ler('robots.txt') };
+
     virar([]) ? ok('virar-dominio.mjs roda sem erro') : bad('virar-dominio.mjs falhou');
 
     const sitemap = ler('sitemap.xml');
@@ -242,19 +265,28 @@ const publicar = args => {
     /<meta property="og:image" content="https:\/\//.test(ler('partes/_molde.html'))
       ? ok('og:image ficou em URL absoluta')
       : bad('og:image continua relativa — link compartilhado fica sem card');
-  } finally {
+
+    /* e o caminho de volta: reverter tem que devolver a prévia byte a byte */
     virar(['--reverter']);
+    const volta = { molde: ler('partes/_molde.html'), pv: ler('privacidade.html'),
+                    robots: ler('robots.txt') };
+    const iguais = Object.keys(previa).every(k => previa[k] === volta[k]);
+    iguais ? ok('virar → reverter devolve tudo exatamente como estava')
+           : bad('a virada deixou resíduo',
+                 Object.keys(previa).filter(k => previa[k] !== volta[k]).join(', '));
+    !fs.existsSync(path.join(RAIZ, 'sitemap.xml')) && !fs.existsSync(path.join(RAIZ, 'CNAME'))
+      ? ok('reverter apaga sitemap.xml e CNAME')
+      : bad('sobrou arquivo de produção depois de reverter');
+  } finally {
+    restaurar();   // devolve o projeto ao estado em que a prova o encontrou
   }
 
-  const depois = { molde: ler('partes/_molde.html'), pv: ler('privacidade.html'),
-                   robots: ler('robots.txt') };
-  const iguais = Object.keys(antes).every(k => antes[k] === depois[k]);
-  iguais ? ok('virar → reverter devolve tudo exatamente como estava')
-         : bad('a virada deixou resíduo',
-               Object.keys(antes).filter(k => antes[k] !== depois[k]).join(', '));
-  !fs.existsSync(path.join(RAIZ, 'sitemap.xml')) && !fs.existsSync(path.join(RAIZ, 'CNAME'))
-    ? ok('reverter apaga sitemap.xml e CNAME')
-    : bad('sobrou arquivo de produção depois de reverter');
+  const intacto = Object.entries(foto).every(([p, c]) => {
+    const abs = path.join(RAIZ, p);
+    return c === null ? !fs.existsSync(abs) : fs.readFileSync(abs, 'utf8') === c;
+  });
+  intacto ? ok('a bateria devolve o projeto exatamente como o encontrou')
+          : bad('a bateria alterou arquivos do projeto');
 }
 
 const bons = provas.filter(p => p.ok).length;
