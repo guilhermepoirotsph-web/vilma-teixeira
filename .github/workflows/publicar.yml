@@ -45,6 +45,22 @@ jobs:
         with:
           chrome-version: stable
 
+      # provar.mjs abre o site num Chrome de verdade: sem servidor no ar ele
+      # bate em localhost:8803 e falha. O `&` deixa o processo vivo para os
+      # passos seguintes; o laço espera a porta em vez de dormir um número
+      # arbitrário de segundos.
+      - name: Subir o servidor de prévia
+        run: |
+          node montar.mjs
+          node preview-server.mjs &
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:8803/ > /dev/null; then
+              echo "prévia no ar em $i s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::o servidor de prévia não subiu em 40 s"; exit 1
+
       - name: Provas do site
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
