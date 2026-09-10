@@ -230,9 +230,9 @@ async function entrar(pg, email, senha = 'teste1234') {
   }));
   cab.papel === 'Social media' ? ok('entra como Social media') : bad('papel', cab.papel);
   cab.rota === 'conteudo' ? ok('social media abre direto no Conteúdo') : bad('rota inicial', cab.rota);
-  !cab.menus.includes('apoiadores')
-    ? ok('social media NÃO vê o menu de Apoiadores', cab.menus.join(','))
-    : bad('viu apoiadores no menu');
+  (!cab.menus.includes('apoiadores') && !cab.menus.includes('agenda'))
+    ? ok('social media não vê Apoiadores nem Agenda no menu', cab.menus.join(','))
+    : bad('menu indevido para o social media', cab.menus.join(','));
 
   await pg.goto(SITE + '/painel/#apoiadores', { waitUntil: 'networkidle2' });
   await dorme(900);
@@ -408,6 +408,9 @@ async function entrar(pg, email, senha = 'teste1234') {
   !doLucas.includes('apoiadores')
     ? ok('social media nunca baixa a lista de apoiadores (dado pessoal)', doLucas.join(','))
     : bad('social media baixou apoiadores!', doLucas.join(','));
+  !doLucas.includes('eventos')
+    ? ok('social media nunca baixa a agenda (nem para "só olhar")')
+    : bad('social media baixou a agenda', doLucas.join(','));
   doLucas.includes('conteudos') && doLucas.includes('site_conteudo')
     ? ok('social media baixa conteúdo e textos do site, que são dele')
     : bad('faltou dado para o social media', doLucas.join(','));

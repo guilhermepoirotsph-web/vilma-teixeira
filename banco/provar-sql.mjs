@@ -209,8 +209,12 @@ await como(u.social, async () => {
     : bad('social media viu apoiadores!', vaz.rows.length + ' linhas');
   // UPDATE segue a mesma regra: linha invisível não é alterada (0 linhas).
   await db.query(`update public.apoiadores set nome='Invadido'`);
+  /* A agenda saiu do escopo do social media (pedido do Guilherme, 10/09):
+     ela é da assessoria, e a agenda interna guarda reunião fechada.
+     RLS filtra em vez de dar erro — o que se mede é ZERO linha. */
   const ev = await db.query(`select count(*)::int n from public.eventos`);
-  ev.rows[0].n === 3 ? ok('social media LÊ a agenda (para produzir conteúdo)') : bad('social não leu agenda');
+  ev.rows[0].n === 0 ? ok('social media NÃO lê a agenda (nem a pública, nem a interna)')
+                     : bad('social ainda enxerga a agenda', ev.rows[0].n + ' linhas');
   await falha('social media não cria evento na agenda',
     () => db.query(`insert into public.eventos (titulo,inicio) values ('Invadindo', now())`),
     'row-level|permission');

@@ -301,7 +301,9 @@
 
   /* ═══════════════════════════════════════════════════ ROTEADOR ══ */
   const PERMISSAO = {
-    agenda:     ['admin', 'assessora', 'social'],
+    // A agenda é da assessoria. O social media não precisa dela para produzir
+    // conteúdo — e a agenda interna tem compromisso fechado que não é dele.
+    agenda:     ['admin', 'assessora'],
     apoiadores: ['admin', 'assessora'],
     conteudo:   ['admin', 'social'],
     site:       ['admin', 'social'],

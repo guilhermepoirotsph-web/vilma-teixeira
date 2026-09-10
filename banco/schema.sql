@@ -321,11 +321,14 @@ drop policy if exists p_perfis_admin_tudo on public.perfis;
 create policy p_perfis_admin_tudo on public.perfis
   for all to authenticated using (public.eh_admin()) with check (public.eh_admin());
 
--- eventos: admin e assessora escrevem; social só lê
+-- eventos: a agenda é da assessoria, e só dela.
+-- O social media NÃO lê: esconder o menu no painel não bastaria, porque o dado
+-- continuaria descendo para o navegador dele — e a agenda interna guarda
+-- reunião fechada que não é do escopo de quem cuida das redes.
 drop policy if exists p_eventos_ler on public.eventos;
 create policy p_eventos_ler on public.eventos
   for select to authenticated
-  using (public.pode(array['admin','assessora','social']::papel_equipe[]));
+  using (public.pode(array['admin','assessora']::papel_equipe[]));
 
 drop policy if exists p_eventos_escrever on public.eventos;
 create policy p_eventos_escrever on public.eventos
