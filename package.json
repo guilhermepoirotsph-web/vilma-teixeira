@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "vilma-teixeira-site",
   "version": "1.0.0",
   "private": true,
@@ -21,7 +21,8 @@
     "provar:banco": "node banco/provar-sql.mjs",
     "provar:painel": "node ferramentas/provar-painel.mjs",
     "provar:publicacao": "node ferramentas/provar-publicacao.mjs",
-    "provar:n8n": "node ferramentas/provar-n8n.mjs"
+    "provar:n8n": "node ferramentas/provar-n8n.mjs",
+    "sql": "node banco/montar-sql.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

@@ -526,6 +526,45 @@ await como(u.admin, async () => {
     : bad('número guardado em formato cru', guardado);
 }
 
+/* ═════ 10-B · O ARQUIVO ÚNICO É O MESMO BANCO ═══════════════════════ */
+{
+  /* Ele vai colar `TUDO.sql` no SQL Editor, não os quatro arquivos. Se o
+     concatenado divergir do que esta suíte prova, o banco de produção fica
+     diferente do banco testado — e ninguém descobre até dar errado em cima
+     da hora. Aqui o gerado é rodado num Postgres limpo e comparado. */
+  const { execFileSync } = await import('node:child_process');
+  execFileSync('node', [join(AQUI, 'montar-sql.mjs')], { stdio: 'pipe' });
+  const tudo = await readFile(join(AQUI, 'TUDO.sql'), 'utf8');
+
+  const db2 = new PGlite();
+  await db2.exec(`
+    create schema if not exists auth;
+    create table if not exists auth.users (
+      id uuid primary key default gen_random_uuid(), email text unique,
+      raw_user_meta_data jsonb default '{}'::jsonb);
+    create or replace function auth.uid() returns uuid language sql stable as $$
+      select nullif(current_setting('req.uid', true), '')::uuid $$;
+    create role anon nologin; create role authenticated nologin;
+    grant usage on schema auth to anon, authenticated;
+  `);
+  try {
+    await db2.exec(tudo);
+    ok('TUDO.sql roda inteiro num banco limpo, numa colagem só');
+    await db2.exec(tudo);
+    ok('TUDO.sql é idempotente (colar duas vezes não quebra)');
+
+    const objetos = q => db2.query(q).then(r => r.rows.map(x => Object.values(x)[0]).sort().join(','));
+    const alvo = `select tablename from pg_tables where schemaname='public'`;
+    const t1 = await objetos(alvo);
+    const t2 = await db.query(alvo).then(r => r.rows.map(x => Object.values(x)[0]).sort().join(','));
+    t1 === t2 ? ok('o banco do arquivo único é igual ao dos arquivos separados', t1)
+              : bad('TUDO.sql divergiu dos originais', `único: ${t1}\n      separados: ${t2}`);
+  } catch (e) {
+    bad('TUDO.sql falhou', String(e.message).slice(0, 160));
+  }
+  await db2.close();
+}
+
 /* ═════ 11 · O n8n SÓ ALCANÇA O QUE PRECISA ══════════════════════════ */
 {
   /* A promessa em 04-automacao.sql é forte: "se o VPS for comprometido, o que

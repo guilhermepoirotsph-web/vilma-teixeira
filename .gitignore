@@ -1,4 +1,4 @@
-# ============================================================================
+﻿# ============================================================================
 #  O repositório guarda TUDO: schema do banco, provas, ferramentas e a
 #  documentação. Quem decide o que vai ao ar é o `publicar.mjs`, que monta a
 #  pasta `_site/` com só os arquivos que o navegador precisa.
@@ -13,8 +13,9 @@
 # dependências — reinstaláveis pelo package-lock.json
 node_modules/
 
-# gerado por comando: não vale versionar
+# gerados por comando: não vale versionar
 _site/
+banco/TUDO.sql
 
 # capturas de conferência (dezenas de MB de PNG, geradas por ferramenta)
 caps/
