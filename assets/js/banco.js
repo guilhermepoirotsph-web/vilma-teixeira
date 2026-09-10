@@ -15,8 +15,8 @@
 
   /* ------------------------------------------------------------ CONFIG */
   const CONFIG = {
-    url:   '',   // ex.: https://xxxxxxxxxxxx.supabase.co
-    chave: '',   // publishable / anon key
+    url:   'https://chqedjaonppkvuojkfam.supabase.co',
+    chave: 'sb_publishable_9gBZ2KJ6s6oT7ToDssYmAg_b6FvUWO2',
   };
 
   // Gancho SÓ DE PRÉVIA: localhost e o domínio temporário do cloudflared.

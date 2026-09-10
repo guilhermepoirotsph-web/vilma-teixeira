@@ -15,7 +15,10 @@
   /* ══════════════════════════════════════════════════════ CONFIG ══ */
   // Mesmos valores de assets/js/banco.js. A chave publishable é pública por
   // natureza; a proteção é a RLS (banco/schema.sql). Nunca service_role aqui.
-  const CONFIG = { url: '', chave: '' };
+  const CONFIG = {
+    url:   'https://chqedjaonppkvuojkfam.supabase.co',
+    chave: 'sb_publishable_9gBZ2KJ6s6oT7ToDssYmAg_b6FvUWO2',
+  };
 
   // Gancho SÓ DE PRÉVIA: localhost e o domínio temporário do cloudflared.
   // Em produção (vilmateixeira.com) isto é inerte — window.VT_CONFIG nunca é

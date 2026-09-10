@@ -461,6 +461,35 @@ await como(u.admin, async () => {
     () => db.query(`update public.perfis set papel='admin' where id=$1`, [u.social]),
     'permission denied|papel e ativo'));
 
+  /* O caso que quebrou de verdade ao criar o banco de produção: usuário criado
+     no painel do Supabase ANTES do schema não tem perfil (o gatilho só dispara
+     no INSERT), e promover() atualizava 0 linhas devolvendo sucesso. */
+  {
+    const r = await db.query(
+      `insert into auth.users (email, raw_user_meta_data)
+       values ('anterior@vilma.com.br','{}'::jsonb) returning id`);
+    const uid = r.rows[0].id;
+    await db.query(`delete from public.perfis where id = $1`, [uid]);   // simula o "antes"
+    const sem = (await db.query(
+      `select count(*)::int n from public.perfis where id=$1`, [uid])).rows[0].n;
+    sem === 0 ? ok('cenário reproduzido: usuário no Auth sem perfil')
+              : bad('não consegui reproduzir o cenário');
+
+    const m = (await db.query(`select public.promover($1,'assessora') m`,
+      ['anterior@vilma.com.br'])).rows[0].m;
+    const dep = (await db.query(
+      `select papel, ativo from public.perfis where id=$1`, [uid])).rows[0];
+    (dep && dep.papel === 'assessora' && dep.ativo)
+      ? ok('promover() cria o perfil que faltava em vez de falhar calado', m)
+      : bad('promover() não criou o perfil', JSON.stringify(dep) + ' → ' + m);
+
+    const inexistente = (await db.query(
+      `select public.promover('ninguem@lugar.nenhum','social') m`)).rows[0].m;
+    /NAO ENCONTRADO/.test(inexistente)
+      ? ok('promover() diz claramente quando o e-mail não existe no Auth')
+      : bad('promover() mentiu sobre e-mail inexistente', inexistente);
+  }
+
   // o caminho legítimo continua funcionando
   const msg = (await db.query(`select public.promover($1,'social') m`,
     ['social@vilma.com.br'])).rows[0].m;

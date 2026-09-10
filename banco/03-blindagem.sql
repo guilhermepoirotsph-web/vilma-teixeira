@@ -57,16 +57,33 @@ comment on function public.travar_papel() is
   'coluna acima; este gatilho existe porque GRANT some quando alguém roda '
   '"grant update on public.perfis to authenticated" de novo sem pensar.';
 
--- promover() passa a abrir a tranca — e só dentro da própria transação
+-- ⚠ Achado ao criar o banco de produção (10/09): o gatilho `ao_criar_usuario`
+-- só dispara no INSERT em auth.users. Quem foi criado no painel do Supabase
+-- ANTES de o schema existir não tem linha em `perfis` — e o UPDATE de
+-- promover() afetava ZERO linhas devolvendo "agora é assessora" do mesmo jeito.
+-- Falha silenciosa: a pessoa continuava vendo "aguardando liberação" e ninguém
+-- entendia por quê. As duas funções passam a criar o perfil que falta e a
+-- DIZER o que realmente aconteceu.
 create or replace function public.promover(p_email text, p_papel papel_equipe)
 returns text language plpgsql security definer set search_path = public as $$
-declare v_id uuid;
+declare v_id uuid; v_n int;
 begin
   select id into v_id from auth.users where lower(email) = lower(btrim(p_email));
-  if v_id is null then return 'Usuário não encontrado: ' || p_email; end if;
+  if v_id is null then
+    return 'NAO ENCONTRADO no Auth: ' || p_email || ' — crie o usuário antes.';
+  end if;
+
+  -- rede para quem já existia antes do schema
+  insert into public.perfis (id, nome, email, papel, ativo)
+  select v_id, split_part(p_email, '@', 1), p_email, null, false
+   where not exists (select 1 from public.perfis where id = v_id);
+
   perform set_config('perfis.promocao', 'sim', true);   -- true = local à transação
   update public.perfis set papel = p_papel, ativo = true where id = v_id;
+  get diagnostics v_n = row_count;
   perform set_config('perfis.promocao', '', true);
+
+  if v_n = 0 then return 'FALHOU: perfil de ' || p_email || ' não foi atualizado.'; end if;
   return p_email || ' agora é ' || p_papel || ' (ativo).';
 end $$;
 revoke all on function public.promover(text, papel_equipe) from public, anon, authenticated;
@@ -75,16 +92,27 @@ revoke all on function public.promover(text, papel_equipe) from public, anon, au
 -- mesmo minuto, e apagar a conta no Auth é lento e destrutivo.
 create or replace function public.revogar(p_email text)
 returns text language plpgsql security definer set search_path = public as $$
-declare v_id uuid;
+declare v_id uuid; v_n int;
 begin
   select id into v_id from auth.users where lower(email) = lower(btrim(p_email));
-  if v_id is null then return 'Usuário não encontrado: ' || p_email; end if;
+  if v_id is null then return 'NAO ENCONTRADO no Auth: ' || p_email; end if;
   perform set_config('perfis.promocao', 'sim', true);
   update public.perfis set papel = null, ativo = false where id = v_id;
+  get diagnostics v_n = row_count;
   perform set_config('perfis.promocao', '', true);
+  if v_n = 0 then return 'FALHOU: ' || p_email || ' não tem perfil.'; end if;
   return p_email || ' perdeu o acesso ao painel.';
 end $$;
 revoke all on function public.revogar(text) from public, anon, authenticated;
+
+-- 1.5 · e o mesmo remendo para quem já está no Auth agora, de uma vez.
+-- Idempotente: rodar de novo não duplica nem reativa ninguém.
+insert into public.perfis (id, nome, email, papel, ativo)
+select u.id,
+       coalesce(u.raw_user_meta_data->>'nome', split_part(u.email, '@', 1)),
+       u.email, null, false
+  from auth.users u
+ where not exists (select 1 from public.perfis p where p.id = u.id);
 
 
 -- ══════════ 2 · SITE_CONTEUDO — renomear a chave apagava a lacuna ═══════
