@@ -31,13 +31,32 @@ await db.exec(`
     $$;
   create role anon nologin;
   create role authenticated nologin;
+  create role service_role nologin bypassrls;
+  create role n8n_bot nologin;
   grant usage on schema auth to anon, authenticated;
+  grant usage on schema public to anon, authenticated;
+`);
+
+/* ⚠️ O QUE FALTAVA AQUI, E CUSTOU DOIS VAZAMENTOS EM PRODUÇÃO (10/09/2026).
+   O harness criava os papéis do zero, num Postgres virgem. O Supabase NÃO é
+   virgem: todo projeto vem com DEFAULT PRIVILEGES concedendo ALL em tabelas,
+   sequências e funções novas de `public` para anon e authenticated. Sem isso
+   aqui, tudo que só é seguro "porque ninguém concedeu" passava verde no teste
+   e ficava aberto no ar — foi assim que as views ficaram GRAVÁVEIS por quem
+   loga e três funções internas ficaram executáveis pela internet.
+
+   A regra que fica: o harness tem que ser tão PERMISSIVO quanto a produção,
+   nunca mais restrito. Teste mais fechado que o real é teste que mente. */
+await db.exec(`
+  alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 `);
 
 /* ───────────────────────────── roda o schema de produção ─────────────── */
 /* Na ordem em que o Guilherme vai colar no SQL Editor. Rodar os dois aqui é
    o que garante que o segundo não conflita com o primeiro. */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql']) {
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql', '05-privilegios.sql']) {
   const sql = await readFile(join(AQUI, arq), 'utf8');
   try { await db.exec(sql); ok(arq + ' roda inteiro sem erro'); }
   catch (e) { bad(arq + ' falhou', e.message); imprimir(); process.exit(1); }
@@ -45,7 +64,7 @@ for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-autom
 
 /* e roda DE NOVO: migração que não é idempotente quebra na segunda mão, e a
    segunda mão sempre acontece (colou duas vezes, refez o banco, restaurou). */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql']) {
+for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql', '05-privilegios.sql']) {
   const sql = await readFile(join(AQUI, arq), 'utf8');
   try { await db.exec(sql); ok(arq + ' é idempotente (roda 2× sem erro)'); }
   catch (e) { bad(arq + ' não é idempotente', String(e.message).slice(0, 120)); }
@@ -592,6 +611,79 @@ await como(u.admin, async () => {
     bad('TUDO.sql falhou', String(e.message).slice(0, 160));
   }
   await db2.close();
+}
+
+/* ═════ 10-C · PRIVILÉGIO DIRETO: o que cada papel ALCANÇA ═══════════ */
+{
+  /* Estas provas nasceram de dois vazamentos que estiveram NO AR. A RLS estava
+     certa; o que falhou foi a camada de baixo, que a suíte não olhava:
+       · `revoke execute … from anon` não tira o EXECUTE herdado de PUBLIC
+       · `grant select` numa view não retira o ALL que o default privilege deu,
+         e view sem security_invoker é gravável FURANDO a RLS
+     Aqui a pergunta é feita ao catálogo, não ao comportamento. */
+  const podeExec = (papel, f) => db.query(
+    `select has_function_privilege($1, $2, 'execute') p`, [papel, f]).then(r => r.rows[0].p);
+  const podeTab = (papel, t, priv) => db.query(
+    `select has_table_privilege($1, $2, $3) p`, [papel, t, priv]).then(r => r.rows[0].p);
+
+  /* ── funções que o público NÃO pode alcançar ── */
+  const fechadas = [
+    ['public.resumo_do_dia(int)',                     'devolve agenda interna e a base de apoiadores'],
+    ['public.marcar_contato(text, text)',             'é oráculo: revela se um número está cadastrado'],
+    ['public.registrar_log(text, text, text, jsonb)', 'dá escrita no banco sem autenticação'],
+    ['public.gerar_backup()',                         'dispara cópia da base inteira'],
+    ['public.promover(text, papel_equipe)',           'dá papel a quem quiser'],
+    ['public.revogar(text)',                          'tira o acesso de quem quiser'],
+  ];
+  for (const [f, porque] of fechadas) {
+    (await podeExec('anon', f)) === false
+      ? ok(`anon NÃO executa ${f.split('(')[0].replace('public.', '')} — ${porque}`)
+      : bad(`🔴 anon EXECUTA ${f}`, porque);
+  }
+
+  /* ── e as que ele precisa mesmo alcançar ── */
+  for (const f of ['public.registrar_apoio(text, text, text, text, text[], text, text[], boolean, text, text)',
+                   'public.descadastrar(text, text)']) {
+    (await podeExec('anon', f)) === true
+      ? ok('anon continua executando ' + f.split('(')[0].replace('public.', '') + ' (o site depende)')
+      : bad('quebrou o site: anon perdeu ' + f);
+  }
+
+  /* ── views: leitura sim, escrita NUNCA ── */
+  for (const v of ['public.agenda_publica', 'public.site_publico']) {
+    (await podeTab('anon', v, 'select')) ? ok('anon lê a view ' + v.replace('public.', ''))
+                                         : bad('anon perdeu a view ' + v);
+    for (const priv of ['insert', 'update', 'delete']) {
+      (await podeTab('authenticated', v, priv)) === false
+        ? ok(`quem loga NÃO faz ${priv} na view ${v.replace('public.', '')} (view fura a RLS na escrita)`)
+        : bad(`🔴 authenticated faz ${priv} em ${v} — e isso passa por cima da RLS`);
+    }
+  }
+
+  /* ── tabelas: nada de INSERT/DELETE onde ninguém cria nem apaga ── */
+  const proibido = [
+    ['perfis', 'insert'], ['perfis', 'delete'],
+    ['site_conteudo', 'insert'], ['site_conteudo', 'delete'],
+    ['backups', 'insert'], ['backups', 'update'], ['backups', 'delete'],
+    ['log_automacao', 'insert'], ['log_automacao', 'update'], ['log_automacao', 'delete'],
+    ['apoiadores', 'insert'],
+  ];
+  for (const [t, priv] of proibido) {
+    (await podeTab('authenticated', 'public.' + t, priv)) === false
+      ? ok(`quem loga não faz ${priv} em ${t}`)
+      : bad(`🔴 authenticated tem ${priv} em ${t} — sobra do default privilege`);
+  }
+
+  /* ── e o que a equipe realmente usa continua de pé ── */
+  const preciso = [
+    ['eventos', 'insert'], ['eventos', 'delete'],
+    ['conteudos', 'insert'], ['apoiadores', 'delete'], ['apoiadores', 'select'],
+  ];
+  for (const [t, priv] of preciso) {
+    (await podeTab('authenticated', 'public.' + t, priv)) === true
+      ? ok(`equipe continua podendo ${priv} em ${t}`)
+      : bad(`quebrou o painel: authenticated perdeu ${priv} em ${t}`);
+  }
 }
 
 /* ═════ 11 · O n8n SÓ ALCANÇA O QUE PRECISA ══════════════════════════ */

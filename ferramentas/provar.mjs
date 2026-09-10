@@ -32,14 +32,27 @@ const nav = await puppeteer.launch({
 });
 const pg = await nav.newPage();
 
-// Esta bateria prova o caminho SEM BANCO (fila local, agenda honesta vazia).
-// Se o config.local.js de desenvolvimento existir, ele ligaria o site ao banco
-// de teste e mudaria justamente o que está sendo medido — então é bloqueado.
+/* Esta bateria prova o caminho SEM BANCO (fila local, agenda honesta vazia) e
+   NUNCA pode encostar num banco de verdade. Duas coisas são cortadas aqui:
+
+   1. `config.local.js`, que ligaria o site ao banco de teste local e mudaria
+      justamente o que está sendo medido.
+   2. **Qualquer chamada ao Supabase.** Desde que `assets/js/banco.js` passou a
+      trazer a URL e a chave de produção (10/09), rodar esta bateria mandava
+      cadastro de teste — inclusive o do teste de robô — para o banco REAL da
+      campanha. Prova que suja produção não é prova, é incidente. */
+const EH_SUPABASE = /supabase\.(co|in)\//;
+const pedidosBloqueados = [];
+const respostasSupabase = [];   // tem que ficar vazio: nada pode CHEGAR ao banco
 await pg.setRequestInterception(true);
 pg.on('request', r => {
-  if (/config\.local\.js$/.test(r.url())) r.abort();
-  else r.continue();
+  if (/config\.local\.js$/.test(r.url()) || EH_SUPABASE.test(r.url())) {
+    pedidosBloqueados.push(r.url());
+    r.abort();
+  } else r.continue();
 });
+
+pg.on('response', r => { if (EH_SUPABASE.test(r.url())) respostasSupabase.push(r.url()); });
 
 const errosJS = [];
 pg.on('pageerror', e => errosJS.push(String(e).slice(0, 200)));
@@ -423,6 +436,19 @@ geral.numerosOk ? ok('números 15115 e 2223 na página') : bad('faltou número n
 }
 
 errosJS.length === 0 ? ok('zero erro de JavaScript') : bad('erros de JS', errosJS.join(' | ').slice(0, 300));
+
+/* A bateria não pode escrever no banco da campanha. O que vale medir NÃO é o
+   que o site acha que é (`VT_BANCO.ligado` fica true, porque o código traz a
+   URL de produção): é se alguma chamada chegou mesmo à rede. Toda tentativa
+   foi interceptada e abortada lá em cima — aqui só se confirma o número. */
+{
+  const tentou = pedidosBloqueados.filter(u => EH_SUPABASE.test(u));
+  const chegou = respostasSupabase.length;
+  chegou === 0
+    ? ok('nenhuma chamada da bateria chegou ao Supabase de produção',
+         tentou.length ? tentou.length + ' tentativa(s) barrada(s) na saída' : 'nem tentou')
+    : bad('🔴 a bateria falou com o banco de verdade', chegou + ' resposta(s)');
+}
 
 /* ══════════════════════════════════════════════════════ RELATÓRIO */
 const bons = provas.filter(p => p.ok).length;

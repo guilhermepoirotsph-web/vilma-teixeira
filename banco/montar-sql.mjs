@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /* ============================================================================
    montar-sql.mjs — junta as migrações na ordem certa num arquivo só.
 
@@ -13,7 +13,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
-export const ORDEM = ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql'];
+export const ORDEM = ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql', '05-privilegios.sql'];
 
 const partes = [];
 for (const arq of ORDEM) {
