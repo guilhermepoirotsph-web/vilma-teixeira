@@ -27,6 +27,7 @@ export const ORDEM = [
   '04-automacao.sql',    // log, resumo do dia, papel n8n_bot
   '05-privilegios.sql',  // fecha EXECUTE em PUBLIC e escrita nas views
   '06-agenda-bot.sql',   // a agenda pelo chat: identidade, código, limites
+  '07-entrada-chat.sql', // porta de entrada: equipe, SAIR, boas-vindas, ignorar
 ];
 
 export async function montar() {

@@ -196,9 +196,30 @@ revoke all on function public.gerar_backup() from public, anon, authenticated;
 --   · abrir conta na WhatsApp Business Platform (Cloud API) para esta campanha
 --     — é proibido pela política da Meta e o banimento pode arrastar o
 --     portfólio inteiro, levando junto os clientes comerciais da agência;
---   · usar "API não oficial" por QR Code (Evolution, Baileys, Z-API e afins)
---     — viola os Termos do WhatsApp, foi o alvo das ondas de banimento de 2026
---     e é exatamente o disparo em massa que a Justiça Eleitoral veda;
 --   · exportar a lista de apoiadores para fora da campanha — a norma eleitoral
 --     proíbe cessão, doação e venda de cadastro a candidato ou partido.
+--
+-- SOBRE O Z-API — decisão do Guilherme em 10/09/2026. Este rodapé antes dizia
+-- "não use, ponto". Estava juntando três regras diferentes numa frase só, e a
+-- separação muda o que é permitido:
+--
+--   · A proibição da META é da **Plataforma WhatsApp Business** (Cloud API), e
+--     é contratual. O Z-API não é essa plataforma — essa cláusula não o pega.
+--   · O que pega é o **Termo de Serviço do WhatsApp**: cliente não autorizado
+--     é uso irregular, e a sanção prática é BANIMENTO DO NÚMERO. Daí a regra
+--     que não se negocia: o robô mora num CHIP SÓ DELE, nunca no número que a
+--     campanha usa para falar com as pessoas.
+--   · A **lei eleitoral** só entra quando o destinatário é ELEITOR. Conversa
+--     com a Mariana sobre agenda não é propaganda nem disparo em massa: ela é
+--     equipe. Mandar mensagem automática para quem se cadastrou é outra
+--     coisa — o art. 34, II liga duas vedações por "ou": sem consentimento
+--     **ou** com ferramenta fora dos termos do provedor. O consentimento aqui
+--     é impecável; a segunda metade fica de pé sozinha. E o porto seguro do
+--     art. 33, §2º fala em mensagem de **pessoa natural** — robô não é.
+--
+-- Tradução operacional, que é o que o 07-entrada-chat.sql implementa:
+--   equipe pelo chat → tranquilo.
+--   responder a quem falou primeiro → tranquilo.
+--   empurrar mensagem para eleitor que nunca escreveu → é aqui que mora o
+--   risco, é escolha do cliente e está registrada como tal, não é o default.
 -- ============================================================================

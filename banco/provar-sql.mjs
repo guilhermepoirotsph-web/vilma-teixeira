@@ -1088,6 +1088,194 @@ await como(u.admin, async () => {
   }
 }
 
+
+/* ═════ 12 · A PORTA DE ENTRADA DO CHAT ═════════════════════════════ */
+{
+  /* A pergunta aqui não é "o agente consegue?" e sim "o que acontece quando
+     chega uma mensagem?". Toda a decisão mora em bot_entrada(), e é decisão
+     de segurança: se ela errar, ou o robô puxa conversa com estranho, ou
+     descadastra quem não pediu, ou manda a mesma mensagem duas vezes para um
+     eleitor. Os três são erro caro e nenhum deles aparece em nó de `if`. */
+  const chamar = (f, ...args) => db.query(
+    `select public.${f}(${args.map((_, i) => '$' + (i + 1)).join(',')}) r`, args)
+    .then(r => r.rows[0].r);
+  const e164 = z => '55' + z.replace(/\D/g, '');
+
+  const ZAP_MARIANA = '12988887777';
+  const NOVO        = '12955551111';
+  const ESTRANHO    = '11944442222';
+
+  const cadastrar = (nome, zap) => db.query(
+    `select public.registrar_apoio($1,$2,'Centro',null,'{}'::text[],null,'{}'::text[],false,'site','texto')`,
+    [nome, zap]);
+
+  /* ── 12.1 · a equipe cai no agente, e só a equipe ── */
+  {
+    const r = await chamar('bot_entrada', ZAP_MARIANA, 'como está a agenda de amanhã?');
+    r?.tipo === 'equipe' && r?.papel === 'assessora'
+      ? ok('mensagem da assessora é roteada para o agente de agenda')
+      : bad('a equipe não foi reconhecida na entrada', JSON.stringify(r));
+  }
+  {
+    const r = await chamar('bot_entrada', ESTRANHO, 'oi, tudo bem?');
+    r?.tipo === 'ignorar'
+      ? ok('estranho falando não recebe resposta automática — quem responde é gente')
+      : bad('o robô puxou conversa com desconhecido', JSON.stringify(r));
+  }
+
+  /* ── 12.2 · SAIR funciona, e não vira consultor da base ── */
+  {
+    const r = await chamar('bot_entrada', ESTRANHO, 'SAIR');
+    await cadastrar('Pedro Henrique Teste', '12933334444');
+    const r2 = await chamar('bot_entrada', '12933334444', 'sair');
+    const saiu = (await db.query(
+      `select optout, optout_em from public.apoiadores
+        where public.zap_e164(whatsapp)=public.zap_e164('12933334444')`)).rows[0];
+
+    r?.tipo === 'sair' && r2?.tipo === 'sair' && r.fala === r2.fala
+      ? ok('SAIR responde IGUAL para quem está e para quem não está na base')
+      : bad('a resposta de saída revela se o número é cadastrado',
+            JSON.stringify({ r, r2 }));
+    saiu && saiu.optout === true && saiu.optout_em
+      ? ok('e quem está na base realmente sai, com data gravada')
+      : bad('SAIR não marcou o optout', JSON.stringify(saiu));
+  }
+  {
+    const semNumero = (await db.query(
+      `select detalhe::text d, mensagem from public.log_automacao
+        where fluxo='entrada-chat' and detalhe->>'acao'='sair' order by id desc limit 1`)).rows[0];
+    semNumero && !/\d{10,}/.test(semNumero.d + semNumero.mensagem)
+      ? ok('o log do descadastramento não guarda o telefone — log não pode virar lista')
+      : bad('o telefone de quem saiu foi parar no log', JSON.stringify(semNumero));
+  }
+  {
+    const variacoes = ['Sair.', 'quero sair', 'PARAR', 'não quero mais receber',
+                       'me remove', 'stop', 'descadastrar'];
+    const falhas = [];
+    for (const v of variacoes) {
+      const r = await db.query(`select public.eh_pedido_de_saida($1) p`, [v]);
+      if (!r.rows[0].p) falhas.push(v);
+    }
+    falhas.length === 0
+      ? ok(`as ${variacoes.length} formas de pedir para sair são reconhecidas`)
+      : bad('pedido de saída não reconhecido', falhas.join(' | '));
+  }
+  {
+    /* o falso positivo é o erro caro: descadastrar quem não pediu */
+    const inocentes = ['vou parar na praça do Jetuba', 'pode cancelar o comício de sábado?',
+                       'quero sair às 18h com vocês', 'a carreata sai de onde?',
+                       'não quero atrapalhar', 'remover o Lucas do grupo?'];
+    const falhas = [];
+    for (const t of inocentes) {
+      const r = await db.query(`select public.eh_pedido_de_saida($1) p`, [t]);
+      if (r.rows[0].p) falhas.push(t);
+    }
+    falhas.length === 0
+      ? ok('frase comum que CONTÉM "parar"/"sair"/"cancelar" não descadastra ninguém')
+      : bad('falso positivo no descadastramento', falhas.join(' | '));
+  }
+
+  /* ── 12.3 · boas-vindas: uma vez, nunca duas ── */
+  {
+    await cadastrar('Juliana Ribeiro Teste', NOVO);
+    const r1 = await chamar('bot_entrada', NOVO, 'oi! acabei de me cadastrar');
+    const r2 = await chamar('bot_entrada', NOVO, 'oi de novo');
+
+    r1?.tipo === 'boas-vindas' && /Juliana/.test(r1.fala || '')
+      ? ok('quem acabou de se cadastrar recebe a confirmação, pelo primeiro nome')
+      : bad('a confirmação não saiu', JSON.stringify(r1));
+    r2?.tipo === 'ignorar'
+      ? ok('e a SEGUNDA mensagem da mesma pessoa não repete a confirmação')
+      : bad('o robô mandou boas-vindas duas vezes', JSON.stringify(r2));
+    /SAIR/.test(r1?.fala || '')
+      ? ok('a confirmação diz como parar de receber — art. 33 da Res. TSE 23.610/2019')
+      : bad('confirmação sem instrução de descadastramento', r1?.fala);
+    /Vilma Teixeira/.test(r1?.fala || '')
+      ? ok('e diz quem está falando, em vez de chegar como número desconhecido')
+      : bad('confirmação não identifica a campanha', r1?.fala);
+  }
+  {
+    await cadastrar('Rita de Cassia Teste', '12922221111');
+    await chamar('bot_entrada', '12922221111', 'sair');
+    const r = await chamar('bot_entrada', '12922221111', 'oi');
+    r?.tipo === 'ignorar'
+      ? ok('quem pediu para sair nunca recebe boas-vindas depois')
+      : bad('mandou mensagem para quem já tinha saído', JSON.stringify(r));
+  }
+
+  /* ── 12.4 · a fila empurrada: entrega marcando, e respeita o teto ── */
+  {
+    await cadastrar('Carlos Eduardo Teste', '12911112222');
+    await cadastrar('Fernanda Lima Teste',  '12911113333');
+
+    const a = await chamar('bot_boas_vindas_pendentes', 10);
+    const zaps = (a?.itens || []).map(i => i.zap);
+    const b = await chamar('bot_boas_vindas_pendentes', 10);
+
+    a?.ok === true && zaps.includes(e164('12911112222')) && zaps.includes(e164('12911113333'))
+      ? ok('a fila entrega quem se cadastrou e ainda não foi avisado', zaps.length + ' na fila')
+      : bad('a fila não trouxe os pendentes', JSON.stringify(a));
+    (b?.itens || []).length === 0
+      ? ok('e NÃO entrega os mesmos de novo — marca ao entregar, uma vez por pessoa')
+      : bad('a fila repetiu gente já entregue', JSON.stringify(b));
+    (a?.itens || []).every(i => /SAIR/.test(i.fala) && /Vilma Teixeira/.test(i.fala))
+      ? ok('cada item da fila já vem com a frase completa, igual à do inbound')
+      : bad('item da fila com frase incompleta');
+  }
+  {
+    const jaSairam = (await db.query(
+      `select count(*)::int n from public.apoiadores where optout and boas_vindas_em is not null
+         and boas_vindas_em > optout_em`)).rows[0].n;
+    jaSairam === 0
+      ? ok('ninguém que pediu para sair foi parar na fila de envio')
+      : bad('a fila incluiu quem já tinha saído', String(jaSairam));
+  }
+  {
+    /* teto horário: circuit breaker para cadastro em massa no formulário */
+    await db.exec(`set role none;
+      update public.apoiadores set boas_vindas_em = now() where boas_vindas_em is null;`);
+    for (let i = 0; i < 62; i++) {
+      await db.query(
+        `insert into public.apoiadores (nome, whatsapp, bairro, consente, boas_vindas_em)
+         values ($1, $2, 'Centro', true, now())`,
+        ['Enxurrada ' + i, '5512' + String(900000000 + i)]);
+    }
+    await cadastrar('Vitima do Teto Teste', '12977778888');
+    const r = await chamar('bot_boas_vindas_pendentes', 10);
+    r?.ok === false && r?.erro === 'teto_por_hora'
+      ? ok(`o teto de 60/hora corta a enxurrada (${r.feitos_na_hora} na última hora)`)
+      : bad('o teto por hora não segurou', JSON.stringify(r));
+    const naoMarcou = (await db.query(
+      `select boas_vindas_em from public.apoiadores
+        where public.zap_e164(whatsapp)=public.zap_e164('12977778888')`)).rows[0];
+    naoMarcou && naoMarcou.boas_vindas_em === null
+      ? ok('e quem ficou de fora do teto continua pendente, não perdido')
+      : bad('o teto marcou gente que não foi enviada');
+  }
+
+  /* ── 12.5 · privilégio ── */
+  {
+    const podeExec = (papel, f) => db.query(
+      `select has_function_privilege($1, $2, 'execute') p`, [papel, f]).then(r => r.rows[0].p);
+    const novas = ['public.bot_entrada(text, text)', 'public.bot_boas_vindas_pendentes(int)'];
+    for (const f of novas) {
+      const abertas = [];
+      for (const papel of ['anon', 'authenticated']) if (await podeExec(papel, f)) abertas.push(papel);
+      abertas.length === 0 && (await podeExec('n8n_bot', f))
+        ? ok(`${f.split('(')[0].replace('public.', '')}: fechada na web, aberta só para o robô`)
+        : bad(`privilégio errado em ${f}`, abertas.join(',') || 'robô não alcança');
+    }
+    for (const f of ['public.texto_boas_vindas(text)', 'public.eh_pedido_de_saida(text)']) {
+      const alguem = [];
+      for (const papel of ['anon', 'authenticated', 'n8n_bot'])
+        if (await podeExec(papel, f)) alguem.push(papel);
+      alguem.length === 0
+        ? ok(`${f.split('(')[0].replace('public.', '')} é interna — nem o robô alcança`)
+        : bad(`${f} exposta`, alguem.join(', '));
+    }
+  }
+}
+
 /* ══════════════════════════════════════════════════════ RELATÓRIO */
 function imprimir() {
   const bons = provas.filter(p => p.ok).length;
