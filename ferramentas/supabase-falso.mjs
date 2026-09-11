@@ -35,6 +35,21 @@ await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
   grant usage on schema auth to anon, authenticated;
+  /* O Supabase já vem com o schema storage. O PGlite nao — e sem este
+     remendo o 08 quebra por schema inexistente, que é um erro de AMBIENTE
+     disfarcado de erro de migracao. Mesma ideia do remendo de auth. */
+  create schema if not exists storage;
+  create table if not exists storage.buckets (
+    id text primary key, name text, public boolean not null default false,
+    file_size_limit bigint, allowed_mime_types text[],
+    created_at timestamptz not null default now());
+  create table if not exists storage.objects (
+    id uuid primary key default gen_random_uuid(),
+    bucket_id text references storage.buckets(id),
+    name text, owner uuid, created_at timestamptz not null default now());
+  alter table storage.objects enable row level security;
+  grant usage on schema storage to anon, authenticated;
+  grant select, insert, update, delete on storage.objects to anon, authenticated;
 `);
 
 /* as migrações, na mesma ordem em que vão ser coladas no SQL Editor — a

@@ -36,6 +36,21 @@ await db.exec(`
   create role service_role nologin bypassrls;
   create role n8n_bot nologin;
   grant usage on schema auth to anon, authenticated;
+  /* O Supabase já vem com o schema storage. O PGlite nao — e sem este
+     remendo o 08 quebra por schema inexistente, que é um erro de AMBIENTE
+     disfarcado de erro de migracao. Mesma ideia do remendo de auth. */
+  create schema if not exists storage;
+  create table if not exists storage.buckets (
+    id text primary key, name text, public boolean not null default false,
+    file_size_limit bigint, allowed_mime_types text[],
+    created_at timestamptz not null default now());
+  create table if not exists storage.objects (
+    id uuid primary key default gen_random_uuid(),
+    bucket_id text references storage.buckets(id),
+    name text, owner uuid, created_at timestamptz not null default now());
+  alter table storage.objects enable row level security;
+  grant usage on schema storage to anon, authenticated;
+  grant select, insert, update, delete on storage.objects to anon, authenticated;
   grant usage on schema public to anon, authenticated;
 `);
 
@@ -81,7 +96,15 @@ await db.exec(`
   alter table public.conteudos  force row level security;
 `);
 
+/* Passar `undefined` aqui é veneno: nenhum dos dois ramos abaixo roda, a
+   sessão fica como DONO das tabelas, e o dono pula a RLS — então um teste de
+   "fulano NÃO consegue" passa verde sem ter testado coisa alguma.
+   Aconteceu de verdade: escrevi `u.inerte`, que não existe (o certo é
+   `u.intruso`), e a prova de conta sem papel virou fumaça.
+   `null` continua valendo: é o anon, de propósito. */
 const como = async (uid, fn) => {
+  if (uid === undefined)
+    throw new Error('como(undefined): papel de teste inexistente — confira o nome em `u`');
   await db.exec(`set role none; select set_config('req.uid', '${uid || ''}', false);`);
   if (uid === null) await db.exec(`set role anon;`);
   else if (uid) await db.exec(`set role authenticated;`);
@@ -596,6 +619,21 @@ await como(u.admin, async () => {
       select nullif(current_setting('req.uid', true), '')::uuid $$;
     create role anon nologin; create role authenticated nologin;
     grant usage on schema auth to anon, authenticated;
+  /* O Supabase já vem com o schema storage. O PGlite nao — e sem este
+     remendo o 08 quebra por schema inexistente, que é um erro de AMBIENTE
+     disfarcado de erro de migracao. Mesma ideia do remendo de auth. */
+  create schema if not exists storage;
+  create table if not exists storage.buckets (
+    id text primary key, name text, public boolean not null default false,
+    file_size_limit bigint, allowed_mime_types text[],
+    created_at timestamptz not null default now());
+  create table if not exists storage.objects (
+    id uuid primary key default gen_random_uuid(),
+    bucket_id text references storage.buckets(id),
+    name text, owner uuid, created_at timestamptz not null default now());
+  alter table storage.objects enable row level security;
+  grant usage on schema storage to anon, authenticated;
+  grant select, insert, update, delete on storage.objects to anon, authenticated;
   `);
   try {
     await db2.exec(tudo);
@@ -1273,6 +1311,64 @@ await como(u.admin, async () => {
         ? ok(`${f.split('(')[0].replace('public.', '')} é interna — nem o robô alcança`)
         : bad(`${f} exposta`, alguem.join(', '));
     }
+  }
+}
+
+
+/* ═════ 13 · FOTO ENVIADA PELO PAINEL (Storage) ═════════════════════ */
+{
+  /* O campo de foto era "cole o link". O Lucas não tem onde hospedar, então
+     na prática o campo não seria usado. Agora ele manda o arquivo — e um
+     balde de escrita aberto é exatamente o tipo de porta que se abre "só para
+     testar" e fica. As provas abaixo perguntam quem consegue subir. */
+  const subir = (objeto) => db.query(
+    `insert into storage.objects (bucket_id, name) values ('site', $1)`, [objeto]);
+
+  {
+    const b = (await db.query(
+      `select public, file_size_limit, allowed_mime_types from storage.buckets where id='site'`)).rows[0];
+    b && b.public === true
+      ? ok('o balde "site" existe e é de leitura pública (foto de campanha é para aparecer)')
+      : bad('balde ausente ou privado', JSON.stringify(b));
+    b && Number(b.file_size_limit) === 5242880
+      ? ok('com teto de 5 MB por arquivo')
+      : bad('sem limite de tamanho no balde', JSON.stringify(b && b.file_size_limit));
+    b && !(b.allowed_mime_types || []).some(t => /svg/i.test(t))
+      && (b.allowed_mime_types || []).includes('image/png')
+      ? ok('aceita PNG/JPEG/WEBP e recusa SVG — SVG é XML e aceita <script>')
+      : bad('lista de tipos do balde errada', JSON.stringify(b && b.allowed_mime_types));
+  }
+
+  await como(u.social, async () => {
+    try { await subir('heroi.foto-1.png'); ok('o social media consegue subir a foto pelo painel'); }
+    catch (e) { bad('o social media NÃO consegue subir', String(e.message).slice(0, 90)); }
+  });
+
+  await falha('a assessora não sobe foto (a agenda dela não tem imagem)',
+    () => como(u.assessora, () => subir('agenda-1.png')), 'row-level security|denied');
+
+  await falha('conta sem papel (nasce inerte) não sobe nada',
+    () => como(u.intruso, () => subir('invasao-1.png')), 'row-level security|denied');
+
+  await falha('o site público (anon) não sobe arquivo nenhum',
+    () => como(null, () => subir('anon-1.png')), 'row-level security|denied');
+
+  await como(null, async () => {
+    const n = (await db.query(`select count(*)::int n from storage.objects where bucket_id='site'`)).rows[0].n;
+    n >= 1 ? ok('mas anon LÊ o balde — é assim que a foto aparece no site', n + ' arquivo(s)')
+           : bad('anon não enxerga o arquivo: a foto não apareceria no site');
+  });
+
+  {
+    /* a policy é presa ao balde: sem isto, quem pode subir foto do site
+       poderia escrever em qualquer outro balde que o projeto venha a ter */
+    await db.exec(`set role none;
+      insert into storage.buckets (id, name, public) values ('privado','privado',false)
+      on conflict (id) do nothing;`);
+    await falha('quem sobe foto do site não escreve em OUTRO balde',
+      () => como(u.social, () => db.query(
+        `insert into storage.objects (bucket_id, name) values ('privado','vazamento.png')`)),
+      'row-level security|denied');
   }
 }
 

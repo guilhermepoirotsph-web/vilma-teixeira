@@ -1072,15 +1072,103 @@
       : `<input class="campo__in" data-chave="${c.chave}"
               type="${c.tipo === 'url' || c.tipo === 'imagem' ? 'url' : 'text'}"
               inputmode="${c.tipo === 'numero' ? 'numeric' : 'text'}" value="${v}">`;
+    // Em campo de imagem o caminho normal passa a ser MANDAR O ARQUIVO. A
+    // caixa de texto continua logo abaixo porque às vezes a foto já está numa
+    // URL boa e obrigar a baixar para subir de novo seria trabalho à toa.
+    const enviar = c.tipo === 'imagem' ? `
+      <span class="envio">
+        <label class="envio__bt">Escolher foto do computador
+          <input type="file" accept="image/png,image/jpeg,image/webp" hidden
+                 data-envia="${c.chave}"></label>
+        <span class="envio__st" data-envio-st="${c.chave}"></span>
+      </span>` : '';
+
     return `<label class="campo ${largo ? 'campo--largo' : ''}">
       <span class="campo__rot">${esc(c.rotulo)}
         <span class="salvo" data-salvo="${c.chave}">salvo ✓</span></span>
+      ${enviar}
       ${entrada}
       ${c.dica ? `<span class="campo__dica">${esc(c.dica)}</span>` : ''}
-      ${c.tipo === 'imagem' && c.valor
-        ? `<img class="previa-img" src="${esc(c.valor)}" alt="" onerror="this.hidden=true">` : ''}
+      <img class="previa-img" data-previa="${c.chave}" alt=""
+           src="${c.tipo === 'imagem' && c.valor ? esc(c.valor) : ''}"
+           ${c.tipo === 'imagem' && c.valor ? '' : 'hidden'}
+           onerror="this.hidden=true">
     </label>`;
   }
+
+  /* ─────────────────────────────────────────── envio de foto ──
+     O Lucas não tem onde hospedar imagem: o Instagram bloqueia hotlink e
+     pedir para ele subir arquivo no repositório é pedir para ele aprender
+     git. Sem isto o campo de foto simplesmente não seria usado. */
+  const BALDE = 'site';
+
+  async function enviarFoto(chave, arquivo, tentou) {
+    const aceitos = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!aceitos.includes(arquivo.type))
+      throw new Error('Só PNG, JPG ou WEBP — o arquivo escolhido é ' + (arquivo.type || 'de outro tipo') + '.');
+    if (arquivo.size > 5 * 1024 * 1024)
+      throw new Error('A imagem tem ' + (arquivo.size / 1048576).toFixed(1) + ' MB e o limite é 5 MB. '
+                    + 'Reduza o tamanho antes de enviar.');
+
+    // nome novo a cada envio: gravar por cima do mesmo nome faz o navegador e
+    // o CDN continuarem servindo a foto antiga, e a pessoa jura que não subiu
+    const ext = arquivo.type === 'image/png' ? 'png' : arquivo.type === 'image/webp' ? 'webp' : 'jpg';
+    const objeto = `${chave}-${Date.now()}.${ext}`;
+    const base = CONFIG.url.replace(/\/+$/, '');
+
+    const r = await fetch(`${base}/storage/v1/object/${BALDE}/${objeto}`, {
+      method: 'POST',
+      headers: {
+        apikey: CONFIG.chave,
+        Authorization: 'Bearer ' + S.token,
+        'Content-Type': arquivo.type,
+      },
+      body: arquivo,
+    });
+    if (r.status === 401 && !tentou && S.refresh && await renovar())
+      return enviarFoto(chave, arquivo, true);
+    if (!r.ok) {
+      const t = await r.text().catch(() => '');
+      if (r.status === 403 || /row-level security|Unauthorized/i.test(t))
+        throw new Error('Seu acesso não permite enviar foto. Fale com o Guilherme.');
+      if (r.status === 404)
+        throw new Error('O espaço de fotos ainda não foi criado no Supabase (balde "site").');
+      throw new Error(mensagemAmigavel(r.status, t));
+    }
+    return `${base}/storage/v1/object/public/${BALDE}/${objeto}`;
+  }
+
+  $('#grupos-site').addEventListener('change', async e => {
+    const inp = e.target.closest('input[type=file][data-envia]');
+    if (!inp || !inp.files || !inp.files[0]) return;
+    e.stopPropagation();                       // não é o salvar-ao-sair do campo
+
+    const chave = inp.dataset.envia;
+    const st = document.querySelector(`[data-envio-st="${CSS.escape(chave)}"]`);
+    const caixa = document.querySelector(`[data-chave="${CSS.escape(chave)}"]`);
+    if (st) { st.textContent = 'enviando…'; st.classList.remove('erro'); }
+
+    try {
+      const url = await enviarFoto(chave, inp.files[0]);
+      await api('/site_conteudo?chave=eq.' + encodeURIComponent(chave), {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ valor: url }),
+      });
+      const reg = S.site.find(c => c.chave === chave);
+      if (reg) reg.valor = url;
+      if (caixa) caixa.value = url;
+      const img = document.querySelector(`[data-previa="${CSS.escape(chave)}"]`);
+      if (img) { img.src = url; img.hidden = false; }
+      if (st) st.textContent = 'no ar ✓';
+      const vazios = S.site.filter(c => !c.valor || !c.valor.trim()).length;
+      $('#badge-site').textContent = vazios || '';
+    } catch (ex) {
+      if (st) { st.textContent = ''; st.classList.add('erro'); }
+      toast(ex.message, true);
+    } finally {
+      inp.value = '';                          // deixa reenviar o MESMO arquivo
+    }
+  }, true);                                    // captura: roda antes do salvar
 
   $('#grupos-site').addEventListener('click', e => {
     const t = e.target.closest('.grupo__t');
@@ -1186,7 +1274,7 @@
         <ul>
           <li>É onde você <b>alimenta o site</b> sem mexer em código.</li>
           <li><b>Vídeo em destaque:</b> cole o link do post do Instagram e pronto — o site troca sozinho.</li>
-          <li><b>Fotos:</b> cole o link da imagem (PNG sem fundo fica melhor).</li>
+          <li><b>Fotos:</b> clique em <b>Escolher foto do computador</b> e mande o arquivo. PNG sem fundo fica melhor; JPG e WEBP também servem, até 5 MB. A foto entra no ar na hora. Se já tiver o link de uma imagem, dá para colar na caixa de baixo.</li>
           <li>Salva sozinho quando você sai do campo — aparece "salvo ✓".</li>
           <li>Campo em branco = o site usa o texto padrão. Nunca fica buraco na tela.</li>
         </ul>

@@ -382,3 +382,19 @@ select.campo__in{appearance:none;cursor:pointer;padding-right:38px;
 .ajuda .bloco{padding:16px 18px;border-radius:var(--raio);background:var(--painel);
   box-shadow:inset 0 0 0 1px var(--linha)}
 .ajuda .bloco--alerta{background:rgba(255,198,41,.09);box-shadow:inset 0 0 0 1px rgba(255,198,41,.3)}
+
+/* ── envio de foto direto do computador ───────────────────────────────
+   O botão é um <label> com o <input type=file> escondido dentro: o input
+   nativo não aceita estilo, e "Choose File / Nenhum arquivo selecionado"
+   em inglês no meio de um painel em português é o tipo de detalhe que faz
+   a pessoa achar que quebrou. */
+.envio{display:flex;align-items:center;gap:10px;margin:2px 0 8px}
+.envio__bt{
+  display:inline-flex;align-items:center;gap:8px;cursor:pointer;
+  padding:8px 14px;border-radius:10px;font:700 .78rem var(--f-t);
+  color:var(--marinho-900);background:var(--ouro);
+  border:1px solid transparent;transition:filter .18s ease}
+.envio__bt:hover{filter:brightness(1.08)}
+.envio__bt:focus-within{outline:none;box-shadow:0 0 0 3.5px rgba(255,198,41,.28)}
+.envio__st{font:700 .74rem var(--f-x);color:var(--royal-claro)}
+.envio__st.erro{color:#e8112d}
