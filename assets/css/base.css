@@ -10,12 +10,12 @@
   --marinho-800:#0a1a11;
   --marinho-700:#0f2a1b;
   --marinho-600:#153a24;
-  --royal:#00a650;
+  --royal:#008a42;
   --royal-claro:#34c173;
 
-  --magenta:#e8112d;
-  --magenta-800:#b80d23;
-  --magenta-300:#f58220;
+  --magenta:#00a650;
+  --magenta-800:#00713a;
+  --magenta-300:#7ddc9f;
 
   --ouro:#ffc629;
   --ouro-600:#e0a800;
@@ -55,7 +55,7 @@
   --sombra-1:0 2px 10px rgba(4,20,10,.12);
   --sombra-2:0 18px 48px -18px rgba(4,20,10,.48);
   --sombra-3:0 40px 90px -30px rgba(4,20,10,.68);
-  --brilho-magenta:0 0 60px -12px rgba(232,17,45,.75);
+  --brilho-magenta:0 0 60px -12px rgba(0,166,80,.75);
   --brilho-ouro:0 0 48px -14px rgba(255,198,41,.72);
 
   --transicao:.45s cubic-bezier(.22,1,.36,1);
@@ -208,7 +208,7 @@ h1,h2,h3,h4{margin:0;font-family:var(--f-titulo);font-weight:800;line-height:1.0
   font-size:.72rem;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
   background:var(--ouro-fraco);color:var(--ouro);box-shadow:inset 0 0 0 1px rgba(255,198,41,.32)
 }
-.selo--magenta{background:rgba(232,17,45,.14);color:var(--magenta-300);box-shadow:inset 0 0 0 1px rgba(232,17,45,.36)}
+.selo--magenta{background:rgba(0,166,80,.14);color:var(--magenta-300);box-shadow:inset 0 0 0 1px rgba(0,166,80,.36)}
 .selo--demo{background:rgba(255,255,255,.1);color:var(--texto-claro-2);box-shadow:inset 0 0 0 1px var(--linha)}
 .claro .selo{color:var(--ouro-600);background:rgba(224,168,0,.14)}
 
@@ -344,7 +344,7 @@ html.com-aviso .nav{top:38px}
 .grao{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.5;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E")}
 .brilho{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;opacity:.5}
-.brilho--magenta{background:radial-gradient(circle,rgba(232,17,45,.9),transparent 66%)}
+.brilho--magenta{background:radial-gradient(circle,rgba(0,166,80,.9),transparent 66%)}
 .brilho--royal{background:radial-gradient(circle,rgba(0,166,80,.9),transparent 66%)}
 .brilho--ouro{background:radial-gradient(circle,rgba(255,198,41,.6),transparent 66%)}
 .faixa-bandeira{height:5px;background:linear-gradient(90deg,var(--magenta) 0 33%,var(--marfim) 33% 66%,var(--royal) 66% 100%)}

@@ -45,39 +45,39 @@ const HTML = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{width:1200px;height:630px;overflow:hidden;
-       background:#04122b;color:#eef3fb;font-family:'Manrope',system-ui;
+       background:#060f0a;color:#f2f7f3;font-family:'Manrope',system-ui;
        position:relative;display:flex;align-items:center}
 
   /* mesmo mar de luzes do herói, em versão estática */
   .ceu{position:absolute;inset:0;
        background:
-         radial-gradient(120% 90% at 12% 8%, rgba(27,79,160,.55) 0%, transparent 60%),
-         radial-gradient(90% 80% at 92% 88%, rgba(228,24,95,.38) 0%, transparent 62%),
-         linear-gradient(160deg,#061733 0%,#04122b 55%,#0a2a5e 100%)}
+         radial-gradient(120% 90% at 12% 8%, rgba(0,138,66,.55) 0%, transparent 60%),
+         radial-gradient(90% 80% at 92% 88%, rgba(0,166,80,.38) 0%, transparent 62%),
+         linear-gradient(160deg,#0a1a11 0%,#060f0a 55%,#0f2a1b 100%)}
   .luzes{position:absolute;inset:0;opacity:.5}
   .luzes i{position:absolute;width:5px;height:5px;border-radius:50%;
-           background:#e9b949;box-shadow:0 0 14px 3px rgba(233,185,73,.55)}
+           background:#ffc629;box-shadow:0 0 14px 3px rgba(255,198,41,.55)}
   .feixe{position:absolute;left:-10%;top:-40%;width:52%;height:190%;
-         background:linear-gradient(96deg,rgba(233,185,73,.16),transparent 62%);
+         background:linear-gradient(96deg,rgba(255,198,41,.16),transparent 62%);
          transform:rotate(-7deg);filter:blur(2px)}
 
   .grade{position:relative;display:grid;grid-template-columns:1fr auto;
          gap:56px;align-items:center;padding:0 68px;width:100%}
 
   .selo{display:inline-flex;align-items:center;gap:10px;
-        border:1.5px solid rgba(233,185,73,.55);border-radius:999px;
+        border:1.5px solid rgba(255,198,41,.55);border-radius:999px;
         padding:8px 18px;font:700 17px/1 'Manrope';letter-spacing:.14em;
-        text-transform:uppercase;color:#e9b949;margin-bottom:22px}
-  .selo::before{content:'';width:9px;height:9px;border-radius:50%;background:#e9b949}
+        text-transform:uppercase;color:#ffc629;margin-bottom:22px}
+  .selo::before{content:'';width:9px;height:9px;border-radius:50%;background:#ffc629}
 
-  .assina{font-family:'Great Vibes',cursive;font-size:46px;color:#e9b949;
+  .assina{font-family:'Great Vibes',cursive;font-size:46px;color:#ffc629;
           line-height:1;margin-bottom:2px;opacity:.95}
   h1{font-family:'Anton',Impact,sans-serif;font-size:92px;line-height:.92;
      letter-spacing:-.5px;text-transform:uppercase}
   h1 span{display:block;color:#fff}
   .lead{margin-top:20px;font:700 27px/1.32 'Archivo',sans-serif;
-        color:rgba(238,243,251,.9);max-width:20ch}
-  .lead em{font-style:normal;color:#e9b949}
+        color:rgba(242,247,243,.9);max-width:20ch}
+  .lead em{font-style:normal;color:#ffc629}
 
   .duplas{display:flex;gap:26px}
   .p{width:222px;text-align:center}
@@ -90,13 +90,13 @@ const HTML = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
   figcaption b{font-family:'Anton',sans-serif;font-size:42px;line-height:1;
                color:var(--c);letter-spacing:1px}
   figcaption i{font-style:normal;font:700 16px/1.2 'Manrope';
-               color:rgba(238,243,251,.82)}
+               color:rgba(242,247,243,.82)}
 
   .rodape{position:absolute;left:68px;right:68px;bottom:26px;
           display:flex;justify-content:space-between;align-items:center;
-          font:700 17px/1 'Manrope';color:rgba(238,243,251,.6);
-          border-top:1px solid rgba(247,244,238,.16);padding-top:18px}
-  .rodape b{color:#eef3fb}
+          font:700 17px/1 'Manrope';color:rgba(242,247,243,.6);
+          border-top:1px solid rgba(251,250,246,.16);padding-top:18px}
+  .rodape b{color:#f2f7f3}
 </style></head><body>
   <div class="ceu"></div><div class="feixe"></div>
   <div class="luzes">${Array.from({ length: 46 }, (_, i) => {
@@ -112,8 +112,8 @@ const HTML = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
       <p class="lead">Juntos por Caraguá<br>e <em>pelo Brasil</em></p>
     </div>
     <div class="duplas">
-      ${retrato(REGINA, 'Regina Nunes', '15115', '#e4185f')}
-      ${retrato(CEZINHA, 'Cezinha de Madureira', '2223', '#3d78d1')}
+      ${retrato(REGINA, 'Regina Nunes', '15115', '#00a650')}
+      ${retrato(CEZINHA, 'Cezinha de Madureira', '2223', '#34c173')}
     </div>
   </div>
 

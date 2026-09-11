@@ -93,7 +93,7 @@ VT.secao('video', () => {
     bq.className = 'instagram-media';
     bq.setAttribute('data-instgrm-permalink', URL_POST);
     bq.setAttribute('data-instgrm-version', '14');
-    bq.style.cssText = 'background:#0b1526;border:0;margin:0;padding:0;width:100%;min-width:0';
+    bq.style.cssText = 'background:#0b120d;border:0;margin:0;padding:0;width:100%;min-width:0';
     slot.innerHTML = '';
     slot.appendChild(bq);
 

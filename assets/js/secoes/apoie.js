@@ -287,7 +287,7 @@ VT.secao('apoie', () => {
 
   /* ----------------------------------------------------------- confete */
   function confete() {
-    const cores = ['#00a650', '#ffc629', '#e8112d', '#fbfaf6'];
+    const cores = ['#00a650', '#ffc629', '#00a650', '#fbfaf6'];
     const r = form.getBoundingClientRect();
     for (let i = 0; i < 80; i++) {
       const p = document.createElement('i');

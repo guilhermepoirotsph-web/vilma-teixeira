@@ -276,7 +276,7 @@ VT.secao('urna', async () => {
 
   /* ----------------------------------------------------------- confete */
   function confete() {
-    const cores = ['#00a650', '#ffc629', '#e8112d', '#fbfaf6'];
+    const cores = ['#00a650', '#ffc629', '#00a650', '#fbfaf6'];
     const r = maquina.getBoundingClientRect();
     for (let i = 0; i < 70; i++) {
       const p = document.createElement('i');
