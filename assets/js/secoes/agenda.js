@@ -13,13 +13,13 @@ VT.secao('agenda', () => {
   const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
   const TIPOS = {
-    comicio:   { rot: 'Comício',   tint: 'rgba(228,24,95,.12)',  cor: '#e4185f' },
-    caminhada: { rot: 'Caminhada', tint: 'rgba(233,185,73,.18)', cor: '#a5820f' },
-    carreata:  { rot: 'Carreata',  tint: 'rgba(214,93,14,.14)',  cor: '#b8560c' },
-    reuniao:   { rot: 'Reunião',   tint: 'rgba(27,79,160,.12)',  cor: '#1b4fa0' },
-    visita:    { rot: 'Visita',    tint: 'rgba(14,122,107,.14)', cor: '#0e7a6b' },
-    live:      { rot: 'Live',      tint: 'rgba(123,44,191,.13)', cor: '#7b2cbf' },
-    outro:     { rot: 'Agenda',    tint: 'rgba(11,21,38,.08)',   cor: '#42506a' },
+    comicio:   { rot: 'Comício',   tint: 'rgba(232,17,45,.12)',  cor: '#e8112d' },
+    caminhada: { rot: 'Caminhada', tint: 'rgba(255,198,41,.20)', cor: '#a37400' },
+    carreata:  { rot: 'Carreata',  tint: 'rgba(245,130,32,.16)', cor: '#c9620f' },
+    reuniao:   { rot: 'Reunião',   tint: 'rgba(0,166,80,.14)',   cor: '#00a650' },
+    visita:    { rot: 'Visita',    tint: 'rgba(0,113,58,.14)',   cor: '#00713a' },
+    live:      { rot: 'Live',      tint: 'rgba(122,182,72,.16)', cor: '#5f9235' },
+    outro:     { rot: 'Agenda',    tint: 'rgba(11,18,13,.08)',   cor: '#5b6b60' },
   };
 
   /* ------------------------------------------------------------- hoje */

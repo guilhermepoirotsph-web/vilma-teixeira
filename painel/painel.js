@@ -41,25 +41,25 @@
   const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
   const TIPOS = {
-    comicio:   { r: 'Comício',   c: '#e4185f' },
-    caminhada: { r: 'Caminhada', c: '#c9a227' },
-    carreata:  { r: 'Carreata',  c: '#b8560c' },
-    reuniao:   { r: 'Reunião',   c: '#1b4fa0' },
-    visita:    { r: 'Visita',    c: '#0e7a6b' },
-    live:      { r: 'Live',      c: '#7b2cbf' },
-    outro:     { r: 'Agenda',    c: '#42506a' },
+    comicio:   { r: 'Comício',   c: '#e8112d' },
+    caminhada: { r: 'Caminhada', c: '#ffc629' },
+    carreata:  { r: 'Carreata',  c: '#f58220' },
+    reuniao:   { r: 'Reunião',   c: '#00a650' },
+    visita:    { r: 'Visita',    c: '#00713a' },
+    live:      { r: 'Live',      c: '#7ab648' },
+    outro:     { r: 'Agenda',    c: '#5b6b60' },
   };
   const STATUS_AP = {
     novo:       'Novo', contatado: 'Contatado', engajado: 'Engajado',
     voluntario: 'Voluntário', descartado: 'Descartado',
   };
   const COLUNAS = [
-    { id: 'ideia',     r: 'Ideia',      c: '#42506a' },
-    { id: 'roteiro',   r: 'Roteiro',    c: '#1b4fa0' },
-    { id: 'producao',  r: 'Produção',   c: '#7b2cbf' },
-    { id: 'aprovacao', r: 'Aprovação',  c: '#c9a227' },
-    { id: 'agendado',  r: 'Agendado',   c: '#0e7a6b' },
-    { id: 'publicado', r: 'Publicado',  c: '#19a06a' },
+    { id: 'ideia',     r: 'Ideia',      c: '#5b6b60' },
+    { id: 'roteiro',   r: 'Roteiro',    c: '#a37400' },
+    { id: 'producao',  r: 'Produção',   c: '#ffc629' },
+    { id: 'aprovacao', r: 'Aprovação',  c: '#f58220' },
+    { id: 'agendado',  r: 'Agendado',   c: '#34c173' },
+    { id: 'publicado', r: 'Publicado',  c: '#00a650' },
   ];
   const FORMATOS = { reel: 'Reel', carrossel: 'Carrossel', story: 'Story',
                      foto: 'Foto', live: 'Live', texto: 'Texto' };
