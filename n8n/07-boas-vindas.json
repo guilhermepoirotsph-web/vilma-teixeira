@@ -1,0 +1,247 @@
+{
+  "name": "VILMA — 07 · Boas-vindas empurradas (Z-API) — LER O AVISO",
+  "nodes": [
+    {
+      "id": "bv-aviso",
+      "name": "LEIA ANTES DE ATIVAR",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -280
+      ],
+      "parameters": {
+        "width": 640,
+        "height": 260,
+        "content": "## ⚠ Este é o fluxo de RISCO — ative só sabendo disto\n\nEle manda mensagem para quem **nunca escreveu** para o número. Segundo a própria Z-API (doc de bloqueios 2026), o fator que mais derruba número é **quantidade de destinatários DIFERENTES**, não volume — e é exatamente isso que este fluxo faz.\n\nE na lei eleitoral o art. 34, II liga duas vedações por **\"ou\"**: sem consentimento **ou** com ferramenta fora dos termos do provedor. O consentimento aqui é impecável; a segunda metade fica de pé sozinha.\n\n**A alternativa que entrega a MESMA experiência sem isso:** o site já abre o WhatsApp com o texto pronto. Ela toca em enviar, e o fluxo **05** responde as boas-vindas — conversa que ela começou. Nesse caminho este fluxo 07 fica desligado.\n\nSe ativar: chip SÓ do robô, nunca o número da campanha."
+      }
+    },
+    {
+      "id": "bv-cron",
+      "name": "A cada 2 minutos",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "notes": "2 minutos porque 'logo depois de enviar o formulário' não precisa ser instantâneo, e sondar de 2 em 2 é barato. O teto real de segurança não está aqui, está no banco: bot_boas_vindas_pendentes() corta em 60 por hora."
+    },
+    {
+      "id": "bv-banco",
+      "name": "Quem ainda não foi avisado",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.bot_boas_vindas_pendentes(10) as r;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "SUBSTITUIR",
+          "name": "Supabase Vilma (n8n_bot)"
+        }
+      },
+      "notes": "⚠ Esta função MARCA ao entregar (claim-and-return). Quem sai daqui já está marcado como avisado: se o envio falhar, aquela pessoa fica sem a mensagem. É de propósito — mandar duas vezes para um eleitor é pior que mandar zero. Por isso NÃO reprocesse itens daqui à mão."
+    },
+    {
+      "id": "bv-abre",
+      "name": "Um item por mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json.r || {};\nif (r.ok === false) {\n  // teto horário batido: não é erro, é o disjuntor funcionando\n  return [];\n}\nreturn (r.itens || []).map(x => ({ json: x }));"
+      }
+    },
+    {
+      "id": "bv-tem",
+      "name": "Tem alguém na fila?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !!$json.zap && !!$json.fala }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bv-envia",
+      "name": "Manda a confirmação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -60
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZAPI_BASE }}/send-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Client-Token",
+              "value": "={{ $env.ZAPI_CLIENT_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $json.zap, message: $json.fala, delayMessage: 5, delayTyping: 3 }) }}",
+        "options": {
+          "timeout": 20000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 12000
+            }
+          }
+        }
+      },
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "notes": "12 segundos entre um envio e outro, e delay de digitação: cadência de gente. retryOnFail FALSO de propósito — reenviar aqui é mandar duas vezes para a mesma pessoa, que é o erro que este fluxo inteiro existe para evitar."
+    },
+    {
+      "id": "bv-log",
+      "name": "Registra no log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1200,
+        -60
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log('07-boas-vindas','info','confirmações enviadas', jsonb_build_object('quantidade', $1::int)) as id;",
+        "options": {
+          "queryReplacement": "={{ $items().length }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "SUBSTITUIR",
+          "name": "Supabase Vilma (n8n_bot)"
+        }
+      }
+    },
+    {
+      "id": "bv-nada",
+      "name": "Fila vazia",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        120
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "A cada 2 minutos": {
+      "main": [
+        [
+          {
+            "node": "Quem ainda não foi avisado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quem ainda não foi avisado": {
+      "main": [
+        [
+          {
+            "node": "Um item por mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um item por mensagem": {
+      "main": [
+        [
+          {
+            "node": "Tem alguém na fila?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem alguém na fila?": {
+      "main": [
+        [
+          {
+            "node": "Manda a confirmação",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fila vazia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manda a confirmação": {
+      "main": [
+        [
+          {
+            "node": "Registra no log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS"
+  }
+}

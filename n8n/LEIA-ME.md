@@ -1,12 +1,21 @@
 # Automações no n8n
 
-Quatro fluxos, todos internos. **Nenhum deles fala com eleitor** — e isso não é
-timidez de projeto, é o que a regra permite.
+Oito fluxos. Cinco internos (00 a 04), e três de chat pelo **Z-API**, decidido
+pelo Guilherme em 11/09/2026: `05-chat-entrada`, `06-lembretes` e
+`07-boas-vindas`.
+
+> **O que mudou, e o que não mudou.** Este arquivo dizia "nenhum fluxo fala com
+> eleitor". Continua sendo a regra para tudo que é **automático e empurrado** —
+> com uma exceção que o cliente escolheu e que está marcada como tal: o fluxo
+> **07** manda uma confirmação para quem se cadastrou no site. Uma, por pessoa,
+> com consentimento gravado e instrução de saída na própria mensagem.
+> O detalhamento legal e o caminho de menor risco estão em
+> `docs/AGENTE-AGENDA.md`, seção 5, e no rodapé de `banco/02-contato.sql`.
 
 ## Por que o n8n aqui é copiloto, não remetente
 
-O pedido original era "API do WhatsApp + disparo pelo n8n". Não dá, por dois
-motivos independentes — qualquer um dos dois já bastaria:
+O pedido original era "API do WhatsApp + disparo pelo n8n". Pela **API oficial**
+não dá, por dois motivos independentes — qualquer um dos dois já bastaria:
 
 **1. A Meta proíbe.** A política oficial da WhatsApp Business Platform, em
 português (`whatsappbusiness.com/pt-br/policy`, conferido em 09/09/2026):
@@ -24,10 +33,27 @@ Business**, e nesse portfólio moram os clientes comerciais da agência.
 massa de conteúdo político-eleitoral em aplicativo de mensagem, e proíbe ceder,
 doar ou vender cadastro eletrônico a candidato ou partido.
 
-**E "API não oficial" por QR Code** (Evolution, Baileys, Z-API e afins) é pior,
-não melhor: viola os Termos do WhatsApp, foi o alvo das ondas de banimento de
-números brasileiros em 2026, e é literalmente o disparo em massa que a norma
-veda.
+**E a via não oficial por QR Code — que é o Z-API, o caminho escolhido —** não
+resolve as duas de uma vez, resolve uma só. A cláusula da Meta é contratual, da
+*Plataforma Business*, e não alcança o Z-API. O que alcança é o **Termo de
+Serviço do WhatsApp**: cliente não autorizado é uso irregular, e a sanção é
+**banimento do número**.
+
+A documentação de bloqueios da própria Z-API (2026) diz qual é o gatilho, e ele
+é específico: **o que mais pesa é a quantidade de destinatários DIFERENTES**,
+não o volume de mensagens. Isso separa os usos:
+
+- falar com a Mariana e o Guilherme todo dia → 2 ou 3 destinatários, sempre os
+  mesmos. Risco baixo.
+- mandar uma confirmação para cada pessoa nova que se cadastra → um
+  destinatário novo de cada vez. **É o padrão que derruba número.**
+
+Daí a regra que não se negocia: **o robô mora num chip só dele**, nunca no
+número que a campanha usa para falar com as pessoas. Se o chip do robô cair, a
+campanha continua de pé.
+
+E a lei eleitoral só entra quando o destinatário é **eleitor**: conversa interna
+de equipe não é propaganda nem disparo em massa.
 
 ## O que dá para fazer, e é o que está montado aqui
 

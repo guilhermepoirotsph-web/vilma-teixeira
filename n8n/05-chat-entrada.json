@@ -1,0 +1,313 @@
+{
+  "name": "VILMA — 05 · Entrada do chat (Z-API)",
+  "nodes": [
+    {
+      "id": "ch-webhook",
+      "name": "Z-API chamou (mensagem recebida)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "TROCAR-POR-UM-SEGREDO-LONGO",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "TROCAR-POR-UM-SEGREDO-LONGO-E-ALEATORIO",
+        "options": {}
+      },
+      "notes": "⚠ A Z-API NÃO manda header de autenticação para o seu webhook — conferido na documentação em 11/09/2026. Quem prova que a chamada é dela é a URL: ela é o segredo. Por isso o `path` tem que ser longo e aleatório (gere com `openssl rand -hex 24`), tem que ser HTTPS (a Z-API recusa webhook que não seja) e NUNCA pode ser colada em print, chamado de suporte ou grupo. Quem descobrir essa URL consegue se passar pela Mariana."
+    },
+    {
+      "id": "ch-guarda",
+      "name": "É mensagem de gente, para nós?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.fromMe === true }}"
+            },
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.isGroup === true }}"
+            },
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !!($json.body.text && $json.body.text.message) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "Três portas antes de qualquer coisa. fromMe: a própria mensagem que o robô envia volta pelo webhook — sem este filtro ele conversa consigo mesmo em laço. isGroup: grupo não é canal de comando, e responder em grupo expõe a agenda interna para quem estiver lá. E sem texto (foto, áudio, figurinha) não há o que interpretar: quem responde é gente."
+    },
+    {
+      "id": "ch-banco",
+      "name": "O que é esta mensagem?",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.bot_entrada($1, $2) as r;",
+        "options": {
+          "queryReplacement": "={{ $json.body.phone }},{{ $json.body.text.message }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "SUBSTITUIR",
+          "name": "Supabase Vilma (n8n_bot)"
+        }
+      },
+      "notes": "A decisão inteira mora no banco (banco/07-entrada-chat.sql), onde tem prova. Aqui não há `if` de regra de negócio de propósito: nó de if não é testável, não é revisado e não é versionado junto com a regra."
+    },
+    {
+      "id": "ch-rota",
+      "name": "Separa a rota",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const r = $input.first().json.r || {};\nconst entrada = $('Z-API chamou (mensagem recebida)').first().json.body || {};\n\n// 'equipe' vai para o agente; 'sair' e 'boas-vindas' já vêm com a frase\n// pronta do banco e só precisam ser entregues; 'ignorar' morre aqui.\nreturn [{\n  json: {\n    tipo: r.tipo || 'ignorar',\n    ehEquipe: r.tipo === 'equipe',\n    temResposta: r.tipo === 'sair' || r.tipo === 'boas-vindas',\n    phone: entrada.phone,\n    texto: (entrada.text || {}).message || '',\n    quem: r.nome || entrada.senderName || null,\n    papel: r.papel || null,\n    fala: r.fala || null,\n  }\n}];"
+      }
+    },
+    {
+      "id": "ch-eh-equipe",
+      "name": "É da equipe?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.ehEquipe }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ch-agente",
+      "name": "AGENTE DA AGENDA — ligar aqui",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -220
+      ],
+      "notes": "PLACEHOLDER. Aqui entra o nó AI Agent com: (a) a instrução de sistema de docs/AGENTE-AGENDA.md; (b) as ferramentas bot_agenda, bot_agendar, bot_mover, bot_cancelar, bot_publicar, chamadas por Postgres como n8n_bot; (c) memória com chave de sessão = o telefone. A saída do agente vai para o mesmo 'Responde no WhatsApp'. Deixado como nó vazio de propósito: montar o AI Agent é trabalho de tela, com o seletor de nós do n8n — escrever o JSON dele no escuro é inventar nome de campo.",
+      "parameters": {}
+    },
+    {
+      "id": "ch-tem-resposta",
+      "name": "Tem frase pronta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        40
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.temResposta }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ch-envia",
+      "name": "Responde no WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZAPI_BASE }}/send-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Client-Token",
+              "value": "={{ $env.ZAPI_CLIENT_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $json.phone, message: $json.fala, delayMessage: 2 }) }}",
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "ZAPI_BASE e ZAPI_CLIENT_TOKEN são variáveis de ambiente do container do n8n, NUNCA literais aqui: o id e o token da instância estão na própria URL da Z-API, então essa URL é credencial. No docker-compose:\n  ZAPI_BASE=https://api.z-api.io/instances/<ID>/token/<TOKEN>\n  ZAPI_CLIENT_TOKEN=<token de segurança da conta>\ndelayMessage: 2 dá um respiro humano entre receber e responder."
+    },
+    {
+      "id": "ch-nada",
+      "name": "Fica calado (uma pessoa responde)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        160
+      ],
+      "notes": "Mensagem de quem não é equipe e não pediu para sair. O robô NÃO puxa conversa com eleitor — a mensagem fica no WhatsApp e a equipe responde à mão, que é o desenho legal do projeto desde o começo.",
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Z-API chamou (mensagem recebida)": {
+      "main": [
+        [
+          {
+            "node": "É mensagem de gente, para nós?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É mensagem de gente, para nós?": {
+      "main": [
+        [
+          {
+            "node": "O que é esta mensagem?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "O que é esta mensagem?": {
+      "main": [
+        [
+          {
+            "node": "Separa a rota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separa a rota": {
+      "main": [
+        [
+          {
+            "node": "É da equipe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É da equipe?": {
+      "main": [
+        [
+          {
+            "node": "AGENTE DA AGENDA — ligar aqui",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tem frase pronta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem frase pronta?": {
+      "main": [
+        [
+          {
+            "node": "Responde no WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fica calado (uma pessoa responde)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS"
+  }
+}

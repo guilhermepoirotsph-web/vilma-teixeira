@@ -1,0 +1,234 @@
+{
+  "name": "VILMA — 06 · Lembretes da agenda (Z-API)",
+  "nodes": [
+    {
+      "id": "lb-cron",
+      "name": "Todo dia 07:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 7,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "notes": "07:00 de Brasília — confira o TZ do container (GENERIC_TIMEZONE=America/Sao_Paulo), senão isto dispara às 04:00."
+    },
+    {
+      "id": "lb-banco",
+      "name": "Quem avisar do quê",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.bot_lembretes(24) as r;",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "SUBSTITUIR",
+          "name": "Supabase Vilma (n8n_bot)"
+        }
+      },
+      "notes": "Devolve só quem é admin/assessora COM telefone vinculado, e só evento não cancelado nas próximas 24h. Cada item já vem com a frase pronta — o fuso e o formato da data são resolvidos no banco, que é onde tem prova."
+    },
+    {
+      "id": "lb-abre",
+      "name": "Um item por mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const lista = $input.first().json.r || [];\nreturn lista.map(x => ({ json: x }));"
+      }
+    },
+    {
+      "id": "lb-tem",
+      "name": "Tem lembrete?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ !!$json.zap && !!$json.fala }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "lb-envia",
+      "name": "Manda para a equipe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        -60
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ZAPI_BASE }}/send-text",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Client-Token",
+              "value": "={{ $env.ZAPI_CLIENT_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ phone: $json.zap, message: $json.fala, delayMessage: 3 }) }}",
+        "options": {
+          "timeout": 20000,
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 4000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 10000,
+      "notes": "Destinatário é EQUIPE, nunca eleitor — a lista vem de perfis, não de apoiadores. Um envio a cada 4s: rajada é o padrão que o WhatsApp lê como robô."
+    },
+    {
+      "id": "lb-log",
+      "name": "Registra no log",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1200,
+        -60
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "set role n8n_bot;\nselect public.registrar_log('06-lembretes','info','lembretes enviados à equipe', jsonb_build_object('quantidade', $1::int)) as id;",
+        "options": {
+          "queryReplacement": "={{ $items().length }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "SUBSTITUIR",
+          "name": "Supabase Vilma (n8n_bot)"
+        }
+      }
+    },
+    {
+      "id": "lb-nada",
+      "name": "Nada para hoje",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        960,
+        120
+      ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Todo dia 07:00": {
+      "main": [
+        [
+          {
+            "node": "Quem avisar do quê",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quem avisar do quê": {
+      "main": [
+        [
+          {
+            "node": "Um item por mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um item por mensagem": {
+      "main": [
+        [
+          {
+            "node": "Tem lembrete?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem lembrete?": {
+      "main": [
+        [
+          {
+            "node": "Manda para a equipe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Nada para hoje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manda para a equipe": {
+      "main": [
+        [
+          {
+            "node": "Registra no log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "SUBSTITUIR-PELO-ID-DO-00-ERROS"
+  }
+}
