@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
+import { ORDEM } from '../banco/montar-sql.mjs';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORTA = Number(process.argv[2]) || 8810;
@@ -36,8 +37,9 @@ await db.exec(`
   grant usage on schema auth to anon, authenticated;
 `);
 
-/* os dois arquivos, na mesma ordem em que vão ser colados no SQL Editor */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql', '05-privilegios.sql'])
+/* as migrações, na mesma ordem em que vão ser coladas no SQL Editor — a
+   lista vem do montar-sql.mjs para não existir em dois lugares */
+for (const arq of ORDEM)
   await db.exec(await readFile(join(RAIZ, 'banco', arq), 'utf8'));
 await db.exec(`
   alter table public.perfis        force row level security;

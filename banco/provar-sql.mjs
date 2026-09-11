@@ -9,6 +9,8 @@ import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+/* a ordem vem do montar-sql.mjs: lista duplicada e lista que diverge. */
+import { ORDEM } from './montar-sql.mjs';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const provas = [];
@@ -56,7 +58,7 @@ await db.exec(`
 /* ───────────────────────────── roda o schema de produção ─────────────── */
 /* Na ordem em que o Guilherme vai colar no SQL Editor. Rodar os dois aqui é
    o que garante que o segundo não conflita com o primeiro. */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql', '05-privilegios.sql']) {
+for (const arq of ORDEM) {
   const sql = await readFile(join(AQUI, arq), 'utf8');
   try { await db.exec(sql); ok(arq + ' roda inteiro sem erro'); }
   catch (e) { bad(arq + ' falhou', e.message); imprimir(); process.exit(1); }
@@ -64,7 +66,7 @@ for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-autom
 
 /* e roda DE NOVO: migração que não é idempotente quebra na segunda mão, e a
    segunda mão sempre acontece (colou duas vezes, refez o banco, restaurou). */
-for (const arq of ['schema.sql', '02-contato.sql', '03-blindagem.sql', '04-automacao.sql', '05-privilegios.sql']) {
+for (const arq of ORDEM) {
   const sql = await readFile(join(AQUI, arq), 'utf8');
   try { await db.exec(sql); ok(arq + ' é idempotente (roda 2× sem erro)'); }
   catch (e) { bad(arq + ' não é idempotente', String(e.message).slice(0, 120)); }
@@ -848,6 +850,242 @@ await como(u.admin, async () => {
     const n = (await db.query(`select count(*)::int n from public.log_automacao`)).rows[0].n;
     n === 0 ? ok('social media não vê o log da automação') : bad('log vazou', n);
   });
+}
+
+
+/* ═════ 11 · A AGENDA PELO CHAT (contrato do agente) ═════════════════ */
+{
+  /* Quem chama estas funções é um MODELO DE LINGUAGEM lendo mensagem que
+     chega de fora. O desenho parte de que o prompt vai ser contornado um dia:
+     o que segura não é a instrução, é o GRANT e a checagem de número.
+     As provas abaixo atacam por onde um texto malicioso atacaria. */
+  const chamar = (f, ...args) => db.query(
+    `select public.${f}(${args.map((_, i) => '$' + (i + 1)).join(',')}) r`, args)
+    .then(r => r.rows[0].r);
+  const e164 = z => '55' + z.replace(/\D/g, '');
+
+  const ZAP_MARIANA  = '12988887777';
+  const ZAP_LUCAS    = '12977776666';
+  const ZAP_ESTRANHO = '11955554444';
+
+  await db.exec(`
+    set role none;
+    update public.perfis set whatsapp = '${ZAP_MARIANA}' where id = '${u.assessora}';
+    update public.perfis set whatsapp = '${ZAP_LUCAS}'   where id = '${u.social}';
+  `);
+
+  /* ── 11.1 · quem manda é o número, não o texto ── */
+  {
+    const r = await chamar('bot_agendar', ZAP_ESTRANHO, 'Comício fantasma', '2026-10-01T18:00:00Z');
+    r?.ok === false && r?.erro === 'nao_autorizado'
+      ? ok('número de fora não marca nada, e a resposta não diz por quê')
+      : bad('número desconhecido conseguiu marcar', JSON.stringify(r));
+  }
+  {
+    const r = await chamar('bot_agenda', ZAP_ESTRANHO, null, null);
+    r?.ok === false
+      ? ok('número de fora nem LÊ a agenda — nada vaza pela leitura')
+      : bad('número desconhecido leu a agenda', JSON.stringify(r));
+  }
+  {
+    /* o social media tem login no painel e agora tem telefone no perfil —
+       mesmo assim a agenda não é dele, igual à policy p_eventos_ler */
+    const r = await chamar('bot_agendar', ZAP_LUCAS, 'Reunião do Lucas', '2026-10-01T18:00:00Z');
+    r?.erro === 'nao_autorizado'
+      ? ok('social media com telefone cadastrado continua fora da agenda')
+      : bad('social media mexeu na agenda pelo chat', JSON.stringify(r));
+  }
+  {
+    await db.exec(`select public.revogar('assessora@vilma.com.br');`);
+    const r = await chamar('bot_agenda', ZAP_MARIANA, null, null);
+    await db.exec(`select public.promover('assessora@vilma.com.br','assessora');`);
+    r?.erro === 'nao_autorizado'
+      ? ok('perfil desativado perde o chat na hora, sem precisar tirar o telefone')
+      : bad('perfil inativo continuou mandando pelo chat', JSON.stringify(r));
+  }
+  {
+    const r = await chamar('bot_agenda', '+55 (12) 9 8888-7777', null, null);
+    r?.ok === true
+      ? ok('o telefone é reconhecido em qualquer formato que o mensageiro mandar')
+      : bad('formato diferente do mesmo número virou estranho', JSON.stringify(r));
+  }
+
+  /* ── 11.2 · marcar, mover, cancelar ── */
+  let COD;
+  {
+    const r = await chamar('bot_agendar', ZAP_MARIANA, 'Caminhada no Jetuba',
+      '2026-09-20T13:00:00Z', '2026-09-20T15:00:00Z', 'caminhada', 'Praça do Jetuba', 'Jetuba');
+    COD = r?.codigo;
+    r?.ok === true && /^[23456789ABCDEFGHJKMNPQRTUVWXYZ]{4}$/.test(COD || '')
+      ? ok('a assessora marca pelo chat e recebe um código curto e sem letra ambígua', COD)
+      : bad('bot_agendar não devolveu código utilizável', JSON.stringify(r));
+
+    const ev = (await db.query(`select publicado from public.eventos where codigo=$1`, [COD])).rows[0];
+    ev && ev.publicado === false
+      ? ok('evento marcado pelo chat NASCE fora do site — publicar é passo à parte')
+      : bad('evento do chat já nasceu publicado');
+  }
+  {
+    const antes = (await db.query(`select inicio, fim from public.eventos where codigo=$1`, [COD])).rows[0];
+    const r = await chamar('bot_mover', ZAP_MARIANA, COD.toLowerCase(), '2026-09-21T13:00:00Z');
+    const dep = (await db.query(`select inicio, fim from public.eventos where codigo=$1`, [COD])).rows[0];
+    const durAntes = new Date(antes.fim) - new Date(antes.inicio);
+    const durDep   = new Date(dep.fim)   - new Date(dep.inicio);
+    r?.ok === true && durAntes === durDep
+      ? ok('mover aceita o código em minúsculas e preserva a duração do evento')
+      : bad('mover perdeu a duração ou recusou o código', JSON.stringify(r));
+  }
+  {
+    const r = await chamar('bot_mover', ZAP_MARIANA, 'ZZZZ', '2026-09-21T13:00:00Z');
+    r?.erro === 'codigo_nao_existe' && typeof r?.fala === 'string'
+      ? ok('código inventado dá erro limpo com frase pronta, não exceção de banco')
+      : bad('código inexistente não foi tratado', JSON.stringify(r));
+  }
+  {
+    await chamar('bot_publicar', ZAP_MARIANA, COD, true);
+    const naView = (await db.query(
+      `select count(*)::int n from public.agenda_publica
+        where id = (select id from public.eventos where codigo=$1)`, [COD])).rows[0].n;
+    const r = await chamar('bot_cancelar', ZAP_MARIANA, COD, 'chuva');
+    const linha = (await db.query(
+      `select cancelado_em, cancelado_motivo from public.eventos where codigo=$1`, [COD])).rows[0];
+    const depois = (await db.query(
+      `select count(*)::int n from public.agenda_publica
+        where id = (select id from public.eventos where codigo=$1)`, [COD])).rows[0].n;
+
+    naView === 1 && depois === 0 && linha && linha.cancelado_em
+      ? ok('cancelar tira do site na hora — e a linha CONTINUA no banco, com motivo')
+      : bad('cancelamento não se comportou', JSON.stringify({ naView, depois, linha, r }));
+
+    const rr = await chamar('bot_cancelar', ZAP_MARIANA, COD);
+    rr?.ja_estava === true
+      ? ok('cancelar de novo é inofensivo — o agente repete comando o tempo todo')
+      : bad('segundo cancelamento não foi idempotente', JSON.stringify(rr));
+  }
+
+  /* ── 11.3 · o que o banco recusa mesmo que peçam bonito ── */
+  {
+    const r = await chamar('bot_agendar', ZAP_MARIANA, 'Reunião fechada',
+      '2026-09-22T13:00:00Z', null, 'reuniao', null, null, null, null, true);
+    const p = await chamar('bot_publicar', ZAP_MARIANA, r.codigo, true);
+    p?.erro === 'evento_interno'
+      ? ok('reunião interna não vai ao site nem se pedirem pelo chat')
+      : bad('evento interno foi publicado pelo chat', JSON.stringify(p));
+  }
+  {
+    const r = await chamar('bot_agendar', ZAP_MARIANA, 'Passeata de bicicleta',
+      '2026-09-24T13:00:00Z', null, 'passeata-de-bike');
+    const tipo = (await db.query(`select tipo::text t from public.eventos where codigo=$1`, [r.codigo])).rows[0].t;
+    tipo === 'outro'
+      ? ok('tipo inventado pelo modelo cai em "outro" em vez de estourar o enum')
+      : bad('tipo livre furou o enum', tipo);
+  }
+  {
+    /* a data da urna sai de uma função à parte justamente para ser testável */
+    const r = await chamar('bot_agendar', ZAP_MARIANA, 'Carreata da vitória', '2026-09-23T13:00:00Z');
+    await db.exec(`create or replace function public.dias_de_urna() returns date[]
+      language sql stable as $f$ select array[(now() at time zone 'America/Sao_Paulo')::date] $f$;`);
+    const p = await chamar('bot_publicar', ZAP_MARIANA, r.codigo, true);
+    await db.exec(`create or replace function public.dias_de_urna() returns date[]
+      language sql immutable as $f$ select array['2026-10-04','2026-10-25']::date[] $f$;`);
+    const guardado = (await db.query(
+      `select publicado from public.eventos where codigo=$1`, [r.codigo])).rows[0].publicado;
+    p?.erro === 'dia_de_eleicao' && guardado === false
+      ? ok('no dia da eleição o BANCO recusa publicar — art. 39 §5º III da 9.504/97')
+      : bad('publicou no dia da eleição', JSON.stringify(p));
+  }
+  {
+    /* O pior caso realista: o `recado` que o eleitor escreve no site chega ao
+       agente dentro do resumo_do_dia. Se o modelo obedecer a um "cancele
+       tudo" plantado ali, o teto é o que limita o estrago. */
+    const feitos = [];
+    for (let i = 0; i < 9; i++) {
+      const e = await chamar('bot_agendar', ZAP_MARIANA, 'Visita ' + i, `2026-11-0${i + 1}T13:00:00Z`);
+      feitos.push(e.codigo);
+    }
+    const res = [];
+    for (const c of feitos) res.push(await chamar('bot_cancelar', ZAP_MARIANA, c));
+    const barrados = res.filter(r => r?.erro === 'limite_de_cancelamento').length;
+    const passaram = res.filter(r => r?.ok === true).length;
+    barrados > 0 && passaram <= 6
+      ? ok(`"cancele tudo" plantado num recado para em ${passaram} eventos, todos reversíveis`)
+      : bad('o teto de cancelamento não segurou', `passaram ${passaram}, barrados ${barrados}`);
+  }
+  {
+    const c = (await db.query(`select codigo from public.eventos limit 1`)).rows[0].codigo;
+    await db.exec(`set role none; update public.eventos set codigo='AAAA' where codigo='${c}';`);
+    const agora = (await db.query(`select count(*)::int n from public.eventos where codigo=$1`, [c])).rows[0].n;
+    agora === 1
+      ? ok('o código do evento é imutável — conversa em andamento não perde a referência')
+      : bad('deu para trocar o código de um evento');
+  }
+
+  /* ── 11.4 · privilégio: nada disso encosta na web ── */
+  {
+    const podeExec = (papel, f) => db.query(
+      `select has_function_privilege($1, $2, 'execute') p`, [papel, f]).then(r => r.rows[0].p);
+    const assinaturas = (await db.query(
+      `select p.oid::regprocedure::text a from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+        where n.nspname='public' and p.proname like 'bot\\_%' order by 1`)).rows.map(r => r.a);
+
+    assinaturas.length >= 6
+      ? ok(`o laço de privilégio alcançou as ${assinaturas.length} funções bot_*`)
+      : bad('o laço não achou as funções do agente', String(assinaturas.length));
+
+    for (const papel of ['anon', 'authenticated']) {
+      const abertas = [];
+      for (const a of assinaturas) if (await podeExec(papel, a)) abertas.push(a);
+      abertas.length === 0
+        ? ok(`${papel} não executa NENHUMA função do agente`)
+        : bad(`${papel} alcança função do agente pela web`, abertas.join(', '));
+    }
+    const fechadasProBot = [];
+    for (const a of assinaturas) if (!(await podeExec('n8n_bot', a))) fechadasProBot.push(a);
+    fechadasProBot.length === 0
+      ? ok('o n8n_bot executa todas as bot_*, e continua sem GRANT em tabela nenhuma')
+      : bad('função do agente ficou inalcançável para o robô', fechadasProBot.join(', '));
+
+    for (const f of ['public.equipe_por_zap(text)', 'public.vincular_zap(text, text)',
+                     'public.dias_de_urna()']) {
+      const alguem = [];
+      for (const papel of ['anon', 'authenticated', 'n8n_bot'])
+        if (await podeExec(papel, f)) alguem.push(papel);
+      alguem.length === 0
+        ? ok(`${f.split('(')[0].replace('public.', '')} é interna — nem o robô alcança`)
+        : bad(`${f} está exposta`, alguem.join(', '));
+    }
+  }
+  {
+    const podeCol = (papel, col, priv) => db.query(
+      `select has_column_privilege($1,'public.perfis',$2,$3) p`, [papel, col, priv]).then(r => r.rows[0].p);
+    (await podeCol('authenticated', 'whatsapp', 'select')) === false
+      ? ok('o telefone da equipe não desce para o navegador — é credencial do agente')
+      : bad('authenticated lê perfis.whatsapp');
+    (await podeCol('authenticated', 'whatsapp', 'update')) === false
+      ? ok('e ninguém aponta o chat da assessora para o próprio número')
+      : bad('authenticated escreve em perfis.whatsapp');
+    const faltando = [];
+    for (const c of ['nome', 'papel', 'ativo', 'email'])
+      if (!(await podeCol('authenticated', c, 'select'))) faltando.push(c);
+    faltando.length === 0
+      ? ok('o painel continua lendo o que usa (?select=nome,papel,ativo,email)')
+      : bad('fechar o telefone quebrou o painel', faltando.join(', '));
+  }
+
+  /* ── 11.5 · lembrete: quem recebe é a EQUIPE, nunca eleitor ── */
+  {
+    await db.exec(`set role none;
+      insert into public.eventos (titulo, tipo, inicio, publicado)
+      values ('Comício de amanhã','comicio', now() + interval '6 hours', true);`);
+    const l = await chamar('bot_lembretes', 24);
+    const destinos = [...new Set((l || []).map(x => x.zap))];
+    destinos.length === 1 && destinos[0] === e164(ZAP_MARIANA)
+      ? ok('o lembrete vai só para a equipe de agenda com telefone — o social não recebe')
+      : bad('o lembrete foi para quem não devia', JSON.stringify(destinos));
+    (l || []).length > 0 && (l || []).every(x => typeof x.fala === 'string' && x.fala.includes('Lembrete'))
+      ? ok('cada lembrete já vem com a frase pronta — o modelo não inventa data nem local')
+      : bad('lembrete sem frase pronta', JSON.stringify(l));
+  }
 }
 
 /* ══════════════════════════════════════════════════════ RELATÓRIO */
