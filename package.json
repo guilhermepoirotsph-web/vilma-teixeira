@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "vilma-teixeira-site",
   "version": "1.0.0",
   "private": true,
@@ -6,7 +6,9 @@
   "license": "UNLICENSED",
   "type": "commonjs",
   "main": "index.js",
-  "directories": { "doc": "docs" },
+  "directories": {
+    "doc": "docs"
+  },
   "scripts": {
     "montar": "node montar.mjs",
     "previa": "node preview-server.mjs",
@@ -22,7 +24,8 @@
     "provar:painel": "node ferramentas/provar-painel.mjs",
     "provar:publicacao": "node ferramentas/provar-publicacao.mjs",
     "provar:n8n": "node ferramentas/provar-n8n.mjs",
-    "sql": "node banco/montar-sql.mjs"
+    "sql": "node banco/montar-sql.mjs",
+    "auditar:cor": "node ferramentas/auditar-cor.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
