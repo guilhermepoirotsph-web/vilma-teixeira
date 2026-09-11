@@ -58,10 +58,38 @@ begin
   return new;
 end $$;
 
-drop trigger if exists tg_ao_criar_usuario on auth.users;
-create trigger tg_ao_criar_usuario
-  after insert on auth.users
-  for each row execute function public.ao_criar_usuario();
+/* ⚠ NÃO troque isto por `drop trigger if exists … on auth.users`.
+   No Supabase o SQL Editor roda como `postgres`, que NÃO é superusuário e NÃO
+   é dono de `auth.users` — o dono é `supabase_auth_admin`. Medido no projeto
+   real em 10/09/2026:
+       current_user = postgres · rolsuper = false
+       dono de auth.users = supabase_auth_admin · sou membro = false
+   DROP TRIGGER exige ser dono, então o comando falha com
+   `must be owner of relation users`. E a assimetria engana: na PRIMEIRA
+   colagem o `IF EXISTS` resolve antes da checagem de dono, não acha nada e
+   pula — tudo passa. Só a SEGUNDA colagem morre, e como o SQL Editor para no
+   primeiro erro, NADA depois roda: nem a blindagem de coluna, nem os
+   privilégios. O arquivo parecia idempotente porque o PGlite das provas roda
+   como superusuário dono de tudo, onde a permissão nem existe.
+
+   Criar o gatilho é permitido (o Supabase concede TRIGGER em auth.users);
+   o que não é permitido é derrubá-lo. Então: cria se faltar, não mexe se já
+   existe — e se um dia nem criar for permitido, avisa e segue, porque
+   public.promover() já cria o perfil que faltar. */
+do $$
+begin
+  if not exists (select 1 from pg_trigger
+                  where tgname = 'tg_ao_criar_usuario'
+                    and tgrelid = 'auth.users'::regclass
+                    and not tgisinternal) then
+    create trigger tg_ao_criar_usuario
+      after insert on auth.users
+      for each row execute function public.ao_criar_usuario();
+  end if;
+exception when insufficient_privilege then
+  raise notice 'Sem permissão para criar gatilho em auth.users — siga o resto '
+               'do script: public.promover() cria o perfil que faltar.';
+end $$;
 
 
 -- ──────────────────────────────────────────────── 2 · FUNÇÕES DE PAPEL

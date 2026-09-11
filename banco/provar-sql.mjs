@@ -613,6 +613,97 @@ await como(u.admin, async () => {
   await db2.close();
 }
 
+/* ═════ 10-B-bis · A SEGUNDA COLAGEM, COM O DONO CERTO ═══════════════ */
+{
+  /* A prova 10-B roda o TUDO.sql duas vezes e passa — mas passa por um motivo
+     que NÃO existe em produção: o PGlite roda como superusuário dono de tudo,
+     e checagem de dono nem chega a acontecer. No Supabase o SQL Editor roda
+     como `postgres`, que não é superusuário e não é dono de `auth.users`
+     (o dono é `supabase_auth_admin`). Medido no projeto real em 10/09/2026.
+
+     Aqui a condição de produção é reconstruída de propósito: o dono de
+     auth.users é outro papel, e o script roda por um papel que só tem TRIGGER
+     na tabela. É o cenário exato em que `drop trigger if exists` mata a
+     segunda colagem — e em que nada depois dela roda, porque o SQL Editor
+     para no primeiro erro. O bloco testado é RECORTADO do schema.sql, não
+     copiado: se alguém trocar o arquivo de volta, esta prova cai junto. */
+  const esquema = await readFile(join(AQUI, 'schema.sql'), 'utf8');
+  const guarda = esquema.match(
+    /do \$\$\s*\nbegin\s*\n\s*if not exists \(select 1 from pg_trigger[\s\S]*?\nend \$\$;/);
+
+  if (!guarda) {
+    bad('o bloco guardado do gatilho sumiu do schema.sql',
+        'sem ele, a segunda colagem morre em "must be owner of relation users"');
+  } else {
+    const db3 = new PGlite();
+    await db3.exec(`
+      create schema auth;
+      create table auth.users (
+        id uuid primary key default gen_random_uuid(), email text unique,
+        raw_user_meta_data jsonb default '{}'::jsonb);
+      create function public.ao_criar_usuario() returns trigger
+        language plpgsql as $f$ begin return new; end $f$;
+
+      create role supabase_auth_admin nologin;
+      alter table auth.users owner to supabase_auth_admin;
+
+      -- o papel do SQL Editor: mexe no public, mas só tem TRIGGER no auth
+      create role editor_sql nosuperuser;
+      grant usage on schema auth, public to editor_sql;
+      grant select, trigger on auth.users to editor_sql;
+      grant execute on function public.ao_criar_usuario() to editor_sql;
+    `);
+
+    const comoEditor = async sql => { await db3.exec(`set role editor_sql; ${sql}`); };
+    const quantos = () => db3.query(
+      `select count(*)::int n from pg_trigger
+        where tgname='tg_ao_criar_usuario' and tgrelid='auth.users'::regclass
+          and not tgisinternal`).then(r => r.rows[0].n);
+
+    // 1 · a armadilha é invisível na PRIMEIRA colagem
+    try {
+      await comoEditor(`drop trigger if exists tg_ao_criar_usuario on auth.users;`);
+      ok('sem gatilho, `drop trigger if exists` passa mesmo sem ser dono — ' +
+         'por isso a primeira colagem nunca acusou nada');
+    } catch (e) {
+      bad('o cenário não reproduz a primeira colagem', String(e.message).slice(0, 120));
+    }
+
+    // 2 · o bloco do schema.sql cria o gatilho sem ser dono da tabela
+    try {
+      await comoEditor(guarda[0]);
+      (await quantos()) === 1
+        ? ok('o bloco guardado cria o gatilho sem ser dono de auth.users')
+        : bad('o bloco guardado não criou o gatilho');
+    } catch (e) {
+      bad('o bloco guardado falhou na primeira colagem', String(e.message).slice(0, 120));
+    }
+
+    // 3 · e a linha antiga, agora com o gatilho no lugar, MATA a colagem
+    try {
+      await comoEditor(`drop trigger if exists tg_ao_criar_usuario on auth.users;`);
+      bad('`drop trigger` passou sem ser dono — o cenário não reproduz o Supabase');
+    } catch (e) {
+      /42501|must be owner/i.test(String(e.message))
+        ? ok('confirmado: `drop trigger` mata a segunda colagem — e o SQL Editor ' +
+             'para no primeiro erro, então blindagem e privilégios não rodariam')
+        : bad('`drop trigger` falhou por outro motivo', String(e.message).slice(0, 120));
+    }
+
+    // 4 · o bloco guardado, esse, atravessa a segunda colagem
+    try {
+      await comoEditor(guarda[0]);
+      (await quantos()) === 1
+        ? ok('o bloco guardado atravessa a segunda colagem e deixa 1 gatilho só')
+        : bad('a segunda colagem duplicou ou perdeu o gatilho', String(await quantos()));
+    } catch (e) {
+      bad('o bloco guardado quebrou na segunda colagem', String(e.message).slice(0, 120));
+    }
+
+    await db3.close();
+  }
+}
+
 /* ═════ 10-C · PRIVILÉGIO DIRETO: o que cada papel ALCANÇA ═══════════ */
 {
   /* Estas provas nasceram de dois vazamentos que estiveram NO AR. A RLS estava
@@ -639,6 +730,24 @@ await como(u.admin, async () => {
     (await podeExec('anon', f)) === false
       ? ok(`anon NÃO executa ${f.split('(')[0].replace('public.', '')} — ${porque}`)
       : bad(`🔴 anon EXECUTA ${f}`, porque);
+  }
+
+  /* ── e o que QUEM LOGA também não pode alcançar ──
+     Estas duas são SECURITY DEFINER e não checam papel por dentro: quem
+     executa lê a base de apoiadores e a agenda interna passando por cima da
+     RLS. A primeira versão do 05 as concedia a `authenticated` por eu supor
+     que o painel as usava — ele não usa RPC nenhuma. Elas são do n8n_bot. */
+  for (const [f, quem] of [
+    ['public.resumo_do_dia(int)',            'a base de apoiadores e a agenda interna'],
+    ['public.marcar_contato(text, text)',    'o oráculo de quem está cadastrado'],
+    ['public.registrar_log(text, text, text, jsonb)', 'escrita no log da automação'],
+  ]) {
+    (await podeExec('authenticated', f)) === false
+      ? ok(`quem loga NÃO executa ${f.split('(')[0].replace('public.', '')} — daria ${quem}`)
+      : bad(`🔴 authenticated EXECUTA ${f}`, 'entrega ' + quem + ' ao social media');
+    (await podeExec('n8n_bot', f)) === true
+      ? ok('n8n_bot mantém ' + f.split('(')[0].replace('public.', '') + ' (é o contrato dele)')
+      : bad('quebrou a automação: n8n_bot perdeu ' + f);
   }
 
   /* ── e as que ele precisa mesmo alcançar ── */

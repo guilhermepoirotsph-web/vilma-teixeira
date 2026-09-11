@@ -54,17 +54,37 @@ ar. Em 2–3 minutos o site está em
 **2.1** Crie um projeto **dedicado desta campanha** em <https://supabase.com>.
 Nunca reaproveite o de outro cliente. Região: `South America (São Paulo)`.
 
-**2.2** **SQL Editor** → cole e rode **na ordem**, um de cada vez:
+**2.2** Gere o arquivo único e cole ele no **SQL Editor**, numa colagem só:
 
-```
-banco/schema.sql        →  Run
-banco/02-contato.sql    →  Run
-banco/03-blindagem.sql  →  Run
-banco/04-automacao.sql  →  Run
+```bash
+node banco/montar-sql.mjs
 ```
 
-Os quatro são idempotentes: rodar duas vezes não quebra nada. Isso está
-provado (`node banco/provar-sql.mjs` roda os quatro **duas vezes** e confere).
+Isso escreve `banco/TUDO.sql`, que é a concatenação **nesta ordem** de:
+
+```
+banco/schema.sql          estrutura, RLS e as funções de papel
+banco/02-contato.sql      opt-out, lista de contato e backup
+banco/03-blindagem.sql    trava de coluna (ninguém se autopromove)
+banco/04-automacao.sql    log, resumo do dia e o papel n8n_bot
+banco/05-privilegios.sql  fecha EXECUTE em PUBLIC e escrita nas views
+```
+
+Rodar os cinco separados dá no mesmo — mas colar o `TUDO.sql` evita ordem
+trocada e arquivo esquecido, e é o que a suíte testa. Os cinco são
+idempotentes: colar de novo não quebra nada.
+
+> ⚠ **Confira que a colagem terminou.** O SQL Editor **para no primeiro
+> erro** e não diz o que ficou para trás. Se ele morrer no meio, a estrutura
+> entra mas a blindagem e os privilégios não — e o banco fica aberto
+> parecendo pronto. O fim da saída tem que ser `Success`, não vermelho.
+>
+> A idempotência é provada de duas maneiras, porque uma só enganava:
+> `node banco/provar-sql.mjs` roda o `TUDO.sql` **duas vezes** num Postgres
+> limpo **e** reconstrói a condição real do Supabase — `auth.users`
+> pertencendo a outro papel, o script rodando por quem não é dono dela.
+> Foi a segunda prova que pegou um `drop trigger` que passava na primeira
+> colagem e matava a segunda.
 
 **2.3** **Settings → API**: copie a **URL** e a **publishable key** (`anon`).
 Cole o mesmo par nos dois arquivos:

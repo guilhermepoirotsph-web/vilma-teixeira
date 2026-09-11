@@ -126,10 +126,14 @@ grant execute on function public.resumo_do_dia(int)                     to n8n_b
 grant execute on function public.marcar_contato(text, text)             to n8n_bot;
 grant execute on function public.gerar_backup()                         to n8n_bot;
 
-revoke execute on function public.resumo_do_dia(int)         from anon;
-revoke execute on function public.marcar_contato(text, text) from anon;
-revoke execute on function public.registrar_log(text, text, text, jsonb) from anon;
-grant  execute on function public.resumo_do_dia(int)         to authenticated;
+-- ⚠ Os `revoke ... from anon` que ficavam aqui NÃO FUNCIONAVAM: toda função
+-- nasce com EXECUTE para PUBLIC, e anon é membro de PUBLIC — revogar de anon
+-- não desfaz o que veio por herança. As três ficaram abertas para a internet
+-- até 10/09/2026 (medido no projeto real). E havia um `grant … to
+-- authenticated` em resumo_do_dia que entregava a base de apoiadores ao social
+-- media. Quem fecha isso agora é o 05-privilegios.sql, que revoga de
+-- `public, anon, authenticated` de uma vez e reconcede um a um.
+-- Não reintroduza revoke/grant destas funções aqui: o 05 é a fonte única.
 
 -- ============================================================================
 -- NO SUPABASE, DEPOIS DE RODAR ESTE ARQUIVO:

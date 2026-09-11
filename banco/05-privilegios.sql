@@ -59,9 +59,14 @@ grant execute on function public.pode(papel_equipe[]) to authenticated;
 grant execute on function public.eh_admin()           to authenticated;
 grant execute on function public.zap_e164(text)       to authenticated;
 
--- o painel usa estas duas; o eleitor não
-grant execute on function public.resumo_do_dia(int)          to authenticated;
-grant execute on function public.marcar_contato(text, text)  to authenticated;
+-- ⚠ `resumo_do_dia` e `marcar_contato` NÃO são concedidas a authenticated.
+-- A primeira versão deste arquivo as concedia, com o comentário "o painel usa
+-- estas duas" — suposição errada: `painel/painel.js` não chama RPC nenhuma
+-- (as duas únicas do projeto são registrar_apoio e descadastrar, no site).
+-- Como são SECURITY DEFINER e não checam papel por dentro, conceder a
+-- `authenticated` entregava a base de apoiadores e a agenda interna ao social
+-- media e a qualquer conta inerte — exatamente o que a RLS impede nas tabelas.
+-- Elas ficam só com o n8n_bot, que conecta por Postgres e não pelo REST.
 
 -- o robô do n8n: as quatro do contrato dele, e nada além
 grant execute on function public.resumo_do_dia(int)                      to n8n_bot;
