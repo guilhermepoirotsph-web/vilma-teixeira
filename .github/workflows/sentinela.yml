@@ -1,0 +1,89 @@
+# ============================================================================
+#  Sentinela — mantém o banco acordado e avisa se o site cair.
+#
+#  POR QUE ISTO EXISTE, e é sério:
+#  O plano Free do Supabase PAUSA o projeto depois de 7 dias de pouca
+#  atividade, e voltar do pause é MANUAL, pelo painel. A documentação é
+#  literal (supabase.com/docs/guides/platform/going-into-prod, conferido em
+#  12/09/2026):
+#
+#    "We may pause applications on the Free Plan that exhibit low activity
+#     in a 7-day period to save on server resources."
+#    "You can restore paused projects from the Supabase dashboard"
+#
+#  Num site de campanha isso é um estrago silencioso: uma semana sem visita
+#  — perfeitamente possível antes de a campanha esquentar — e a agenda para
+#  de carregar, o formulário para de gravar e os painéis param de entrar.
+#  Ninguém recebe aviso. O Guilherme só descobre quando alguém reclama.
+#
+#  Esta rotina bate nos endereços públicos a cada 2 dias. A conta é simples:
+#  2 dias de intervalo cabem folgados nos 7, mesmo que um disparo atrase ou
+#  seja pulado (o agendador do GitHub não é pontual em horário de pico).
+#
+#  ⚠ O GitHub DESLIGA workflow agendado em repositório sem commit por 60
+#  dias, e manda e-mail antes. Se isso acontecer, é só reativar na aba
+#  Actions — mas então o relógio dos 7 dias do Supabase volta a correr.
+#
+#  Não precisa de segredo: a chave usada é a publishable, que já é pública
+#  por natureza (quem protege o banco é a RLS, não ela).
+# ============================================================================
+name: Sentinela
+
+on:
+  schedule:
+    - cron: '17 9 */2 * *'     # 09:17 UTC = 06:17 em Brasília, dia sim dia não
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: O banco responde? (e acorda com isto)
+        run: |
+          BASE='https://chqedjaonppkvuojkfam.supabase.co/rest/v1'
+          CHAVE='sb_publishable_9gBZ2KJ6s6oT7ToDssYmAg_b6FvUWO2'
+
+          # site_publico é a view que o site lê para montar textos e fotos.
+          # Se ela responde 200 com conteúdo, o projeto está acordado E
+          # servindo — não é um ping vazio que só olha se a porta abre.
+          COD=$(curl -s -o /tmp/site.json -w '%{http_code}' --max-time 30 \
+                "$BASE/site_publico?select=chave,valor&limit=5" -H "apikey: $CHAVE")
+          echo "site_publico → HTTP $COD"
+          test "$COD" = "200" || { echo "::error::Supabase não respondeu 200 (pode estar PAUSADO — restaure no painel)"; exit 1; }
+
+          LINHAS=$(grep -o '"chave"' /tmp/site.json | wc -l)
+          echo "chaves devolvidas: $LINHAS"
+          test "$LINHAS" -gt 0 || { echo "::error::site_publico respondeu vazio — a view ou o conteúdo sumiu"; exit 1; }
+
+          COD=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+                "$BASE/agenda_publica?select=titulo&limit=1" -H "apikey: $CHAVE")
+          echo "agenda_publica → HTTP $COD"
+          test "$COD" = "200" || { echo "::error::agenda_publica não respondeu 200"; exit 1; }
+
+      - name: As portas fechadas continuam fechadas?
+        run: |
+          BASE='https://chqedjaonppkvuojkfam.supabase.co/rest/v1'
+          CHAVE='sb_publishable_9gBZ2KJ6s6oT7ToDssYmAg_b6FvUWO2'
+
+          # A sentinela também é sentinela de PRIVACIDADE. Se um dia alguém
+          # mexer numa policy e a tabela crua de apoiadores abrir para a
+          # chave pública, isto acusa no dia seguinte em vez de em uma
+          # representação eleitoral.
+          for t in apoiadores perfis conteudos log_automacao backups; do
+            COD=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
+                  "$BASE/$t?select=*&limit=1" -H "apikey: $CHAVE")
+            echo "$t (tabela crua) → HTTP $COD"
+            case "$COD" in
+              401|403|404) : ;;
+              *) echo "::error::$t respondeu $COD para a chave pública — dado exposto"; exit 1 ;;
+            esac
+          done
+
+      - name: O site está no ar?
+        run: |
+          COD=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 https://www.vilmateixeira.com/)
+          echo "www.vilmateixeira.com → HTTP $COD"
+          test "$COD" = "200" || { echo "::error::o site não respondeu 200"; exit 1; }
