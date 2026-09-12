@@ -398,3 +398,36 @@ select.campo__in{appearance:none;cursor:pointer;padding-right:38px;
 .envio__bt:focus-within{outline:none;box-shadow:0 0 0 3.5px rgba(255,198,41,.28)}
 .envio__st{font:700 .74rem var(--f-x);color:var(--royal-claro)}
 .envio__st.erro{color:#e8112d}
+
+/* ════════════════════════════════════════ CELULAR: o que o medidor achou ══
+   Medido com ferramentas/auditar-responsivo.mjs em 360, 390, 414, 768, 1024 e
+   1366 px. Estas regras não são preferência: cada uma fecha um defeito que a
+   ferramenta apontou com número. */
+
+/* 1 · A 360px o cabeçalho tinha 366px e a PÁGINA INTEIRA rolava para o lado.
+   A culpa era do selo "PAINEL DA EQUIPE": `white-space:nowrap` sem
+   `overflow`, então ele empurrava a largura do flex e ninguém encolhia.
+   Rolagem horizontal em painel é pior do que parece — a pessoa arrasta para
+   ler e o conteúdo "foge", e no celular é como se o painel estivesse torto. */
+@media(max-width:520px){
+  .topo__sub{display:none}
+  .topo{gap:10px;padding:0 12px}
+}
+.topo__nome{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 2 · Alvo de toque. O piso de 44px vale para DEDO, não para mouse: aplicar
+   em tudo engordaria o painel no desktop, onde a densidade é a vantagem.
+   `pointer:coarse` é exatamente "o ponteiro principal é grosso" — celular e
+   tablet entram, notebook com trackpad não. */
+@media(pointer:coarse){
+  .btn,.btn--p,.segm__b,.link-fraco,.envio__bt{min-height:44px}
+  .mes-btn{width:44px;height:44px}
+  .topo__site{display:inline-flex;align-items:center;min-height:44px}
+  .topo__burger{width:44px;height:44px}
+  .lado__it{min-height:44px}
+  .aba{min-height:44px}
+}
+@media(pointer:coarse){
+  /* 43×44 não é 44×44: o width virava 43 por causa da borda interna */
+  .mes-btn{min-width:44px;min-height:44px;width:auto;height:auto}
+}

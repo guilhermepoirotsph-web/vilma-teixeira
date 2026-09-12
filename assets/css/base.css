@@ -364,3 +364,14 @@ html.com-aviso .nav{top:38px}
   clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .hide-sm{display:none}
 @media(min-width:860px){.hide-sm{display:block}.so-mobile{display:none}}
+
+/* ═══════════════════════════════════════ CELULAR E TABLET: alvo de toque ══
+   Medido em 360→1366px com ferramentas/auditar-responsivo.mjs. Os links do
+   menu tinham 35px de altura: acima da fonte, abaixo do dedo. O piso de 44px
+   entra só onde o ponteiro é grosso — no desktop o menu continua enxuto, que
+   é como ele foi desenhado. */
+@media(pointer:coarse){
+  .nav__links a{display:inline-flex;align-items:center;min-height:44px}
+  .nav__marca{min-height:44px}
+  .btn,.btn--fantasma,.selo-link{min-height:44px}
+}

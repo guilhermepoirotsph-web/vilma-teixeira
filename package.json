@@ -25,7 +25,8 @@
     "provar:publicacao": "node ferramentas/provar-publicacao.mjs",
     "provar:n8n": "node ferramentas/provar-n8n.mjs",
     "sql": "node banco/montar-sql.mjs",
-    "auditar:cor": "node ferramentas/auditar-cor.mjs"
+    "auditar:cor": "node ferramentas/auditar-cor.mjs",
+    "provar:responsivo": "node ferramentas/auditar-responsivo.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

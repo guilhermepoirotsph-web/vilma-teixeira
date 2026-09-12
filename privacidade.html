@@ -25,6 +25,11 @@
   .doc a{color:var(--magenta-300);text-decoration:underline;text-underline-offset:3px}
   .voltar{display:inline-flex;align-items:center;gap:8px;margin-bottom:26px;font-weight:800;
     font-size:.86rem;color:var(--ouro)}
+  /* "Voltar para o site" tinha 23px de altura. É link solto, não link no meio
+     de parágrafo, então vale o piso de 44px onde o ponteiro é o dedo — e esta
+     é justamente a página que a pessoa abre para se descadastrar. Se ela não
+     acerta o toque, desiste, e a campanha continua mandando mensagem. */
+  @media(pointer:coarse){ .voltar{min-height:44px} }
 
   /* descadastramento — a única parte interativa desta página */
   .saida{display:grid;gap:14px;margin:18px 0 10px;padding:22px;

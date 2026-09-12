@@ -53,3 +53,8 @@ desktop.ini
 #  index.html é GERADO por montar.mjs, mas fica versionado: é ele que a
 #  hospedagem serve, e ver o diff dele já pegou regressão mais de uma vez.
 # ============================================================================
+
+# Rascunhos de sessão que ficaram na pasta (diagnóstico, captura avulsa,
+# experimento de revelação). Continuam no disco — só param de aparecer no
+# `git status` e de entrar em commit por distração de um `git add -A`.
+ferramentas/gd-*.mjs
