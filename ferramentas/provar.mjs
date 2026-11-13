@@ -71,6 +71,14 @@ pg.on('console', m => {
 await pg.goto(URL, { waitUntil: 'load', timeout: 60000 });
 await pg.evaluate(() => document.fonts?.ready).catch(() => {});
 await new Promise(r => setTimeout(r, 2800));
+/* A abertura do herói só começa quando o preloader sai, e em máquina lenta
+   (o runner do GitHub, 13/11/2026) 2,8 s pegavam a animação NO MEIO: botão em
+   opacity 0,34 não é "preso em 0", é "ainda chegando". Espera a timeline
+   terminar, com teto de 12 s. Se ela travar de verdade, o teto estoura e a
+   prova do herói abaixo acusa do mesmo jeito. */
+await pg.waitForFunction(
+  () => !window.VT?.debug?.heroi || window.VT.debug.heroi.progress() === 1,
+  { timeout: 12000 }).catch(() => {});
 
 const irPara = async id => {
   await pg.evaluate(s => {
