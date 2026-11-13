@@ -1,8 +1,9 @@
-# Vilma Teixeira — site de campanha + painéis da equipe
+# Vilma Teixeira — site da vereadora + painéis da equipe
 
-Site da **Vereadora Vilma Teixeira (MDB, Caraguatatuba-SP)**, com ênfase nas
-candidaturas de **Regina Nunes — 15115** (Deputada Estadual) e
-**Cezinha de Madureira — 2223** (Deputado Federal).
+Site da **Vereadora Vilma Teixeira (MDB, Caraguatatuba-SP)**: a trajetória, o
+mandato, a **Lei 2.832/2026** (jardins terapêuticos), o Instagram e as fotos
+dela — nas **cores do MDB**. Desde 13/11/2026 o site é só dela (as candidaturas
+de 2026 que ele apoiava saíram; ver LEIA-ME.md).
 
 Domínio: **www.vilmateixeira.com** · Feito por [GD Studio X](https://github.com/guilhermepoirotsph-web)
 
@@ -22,7 +23,7 @@ Domínio: **www.vilmateixeira.com** · Feito por [GD Studio X](https://github.co
 Vitrine estática montada por partes, **sem bundler**:
 
 ```
-partes/_molde.html  +  partes/01..12-*.html
+partes/_molde.html  +  partes/01..09-*.html
         ↓  node montar.mjs
 index.html                     ← GERADO. Não editar à mão.
         ↓  node publicar.mjs
@@ -51,16 +52,16 @@ do formulário e dos painéis.
 
 ## Provas
 
-Nada é dado como pronto sem prova que roda. **257 no total**, e elas rodam
+Nada é dado como pronto sem prova que roda. **399 no total**, e elas rodam
 sozinhas na Action antes de qualquer publicação:
 
 | Bateria | Quantas | O que garante |
 |---|---|---|
-| `npm run provar:banco` | 95 | RLS, papéis, consentimento LGPD, anti-takeover, opt-out, isolamento do robô do n8n — em Postgres real (PGlite) |
-| `npm run provar:site` | 44 | urna, formulário, agenda, herói, scroll, WhatsApp do gabinete nunca vaza |
-| `npm run provar:painel` | 37 | os dois painéis com login de verdade; cada papel só baixa o que pode ver |
-| `npm run provar:publicacao` | 46 | o pacote leva o certo; a rede contra segredo e a varredura de contato do gabinete são testadas com dado plantado; e a virada de domínio roda inteira, conferindo que o sitemap não anuncia página com noindex |
-| `npm run provar:n8n` | 35 | os fluxos colam no canvas, e nenhum manda mensagem para eleitor |
+| `npm run provar:banco` | 212 | RLS, papéis, consentimento LGPD, anti-takeover, opt-out, isolamento do robô do n8n — em Postgres real (PGlite) |
+| `npm run provar:site` | 43 | só a Vilma (nenhum outro político), paleta MDB, lei, Instagram, galeria, formulário, agenda, herói, scroll, WhatsApp do gabinete nunca vaza |
+| `npm run provar:painel` | 36 | os dois painéis com login de verdade; cada papel só baixa o que pode ver |
+| `npm run provar:publicacao` | 47 | o pacote leva o certo; a rede contra segredo e a varredura de contato do gabinete são testadas com dado plantado; e a virada de domínio roda inteira, conferindo que o sitemap não anuncia página com noindex |
+| `npm run provar:n8n` | 61 | os fluxos colam no canvas, e nenhum manda mensagem para eleitor |
 
 As provas de painel precisam do banco falso e do servidor de prévia no ar:
 

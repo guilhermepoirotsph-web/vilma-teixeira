@@ -97,23 +97,21 @@ foto, live), põe responsável e data prevista, e vai *arrastando o card* de
 coluna em coluna conforme anda. O que estiver em "Aprovação" acende um aviso
 no menu, pra ninguém esquecer de aprovar.
 
-*2) Site* — essa é a parte que interessa: são *28 lacunas* que você troca
+*2) Site* — essa é a parte que interessa: são *18 lacunas* que você troca
 sozinho, sem me pedir nada. Você digita, clica em salvar e *muda no site na
-hora*. Está separado por bloco:
-  • *Herói* — a abertura da página: texto de cima, frase e a foto da Vilma.
-  • *Vídeo* — o recado da Vilma sobre o hospital veterinário gratuito.
-    Aqui tem duas coisas importantes: o campo *"Link do vídeo em MP4"* é o
-    que faz o vídeo *tocar com som* dentro do site, e o campo
-    *"Transcrição com tempos"* é o texto que vai acompanhando a fala na
-    tela, uma frase por linha. Trocou o vídeo, troca esses dois.
-  • *Regina Nunes* e *Cezinha* — nome, número, cargo, partido, texto de
-    apresentação, Instagram e foto de cada um.
-  • *Geral* — WhatsApp da campanha, Instagram da Vilma, frase do fim da
-    página e o *aviso do topo* (deixa vazio quando não tiver aviso).
+hora*. Desde 13/11 o site é *só da Vilma*. Está separado por bloco:
+  • *Instagram* — cole o link de até *4 posts ou reels* da @vereadoravilma
+    (instagram.com/p/… ou /reel/…). O site mostra cada um com o player
+    oficial do Instagram. Link do *perfil* não vale: tem que ser do post.
+  • *Herói* — a abertura da página: linha de cima, texto, selo e a foto da Vilma.
+  • *Galeria* — até *6 fotos* da Vilma (agenda, bairros, Câmara). Sem
+    nenhuma, a galeria nem aparece no site.
+  • *Geral* — WhatsApp próprio da Vilma (nunca o do gabinete), Instagram,
+    frase do fim da página e o *aviso do topo* (deixa vazio quando não tiver aviso).
 
-*Dica das fotos:* as fotos dos candidatos e da Vilma ficam bem melhores em
-*PNG sem fundo* (recortado). Se você mandar com fundo, o site aceita, mas
-perde o efeito.
+*Dica das fotos:* a foto do herói fica bem melhor em *PNG sem fundo*
+(recortado). JPG comum também entra: o site emoldura. Nunca foto com brasão
+ou fundo oficial da Câmara.
 
 *3) Como usar* — última aba do menu, com o passo a passo escrito.
 

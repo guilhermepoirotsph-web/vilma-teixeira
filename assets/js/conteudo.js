@@ -13,57 +13,44 @@
 
   const D = window.VT_DADOS || {};
 
-  /**
-   * Transcrição escrita por gente vira legenda sincronizada.
-   * Aceita "0:07 fala", "1:02:33 fala" e também "00:07 - fala".
-   * Linha sem tempo entra colada na anterior (fala que continua).
-   */
-  function lerTranscricao(texto) {
-    const trechos = [];
-    String(texto || '').split(/\r?\n/).forEach(linha => {
-      const bruto = linha.trim();
-      if (!bruto) return;
-      const m = bruto.match(/^(?:(\d+):)?(\d{1,2}):(\d{2})\s*[-–—:]?\s*(.+)$/);
-      if (!m) {
-        if (trechos.length) trechos[trechos.length - 1].txt += ' ' + bruto;
-        return;
-      }
-      const h = Number(m[1] || 0), min = Number(m[2]), seg = Number(m[3]);
-      trechos.push({ t: h * 3600 + min * 60 + seg, txt: m[4].trim() });
-    });
-    return trechos.sort((a, b) => a.t - b.t);
+  /* Link de post do Instagram → permalink limpo, ou nada.
+     Só passa instagram.com/p|reel|tv/CÓDIGO — qualquer outra coisa colada no
+     painel (link de perfil, encurtador, texto) é descartada em vez de virar
+     um embed quebrado ou um href estranho no site. */
+  function postInstagram(v) {
+    const m = String(v || '').trim()
+      .match(/^https?:\/\/(?:www\.)?instagram\.com\/(?:[\w.]+\/)?(p|reel|tv)\/([\w-]{5,40})/i);
+    return m ? 'https://www.instagram.com/' + m[1].toLowerCase() + '/' + m[2] + '/' : '';
+  }
+
+  /* Foto vinda do painel: só http(s) ou caminho relativo do próprio site. */
+  function urlDeFoto(v) {
+    const t = String(v || '').trim();
+    if (/^https:\/\//i.test(t)) return t;
+    if (/^(?:\.\/)?(?:fotos|midia|assets)\/[\w./-]+\.(?:png|jpe?g|webp)$/i.test(t)) return t;
+    return '';
   }
 
   /* Onde cada chave entra dentro de VT_DADOS (o que as seções leem). */
   const APLICAR = {
-    'video.url':        v => (D.video.url = v),
-    'video.legenda':    v => (D.video.legenda = v),
-    'video.data':       v => (D.video.data = v),
-    'video.arquivo':    v => (D.video.arquivo = v),
-    // A equipe digita "0:07 Boa noite, Caraguá." e o site vira legenda sincronizada.
-    // Formato de gente, não .vtt — quem escreve é o social media, não um técnico.
-    'video.transcricao': v => { D.video.transcricao = lerTranscricao(v); },
-
-    'regina.nome':      v => (D.regina.nome = v),
-    'regina.numero':    v => { D.regina.numero = v; D.regina.numeroFmt = v.split(''); },
-    'regina.cargo':     v => (D.regina.cargo = v),
-    'regina.partido':   v => (D.regina.partido = v),
-    'regina.lead':      v => (D.regina.lead = v),
-    'regina.frase':     v => (D.regina.frase = v),
-    'regina.foto':      v => (D.regina.foto = v),
-    'regina.instagram': v => (D.regina.instagram = v),
-
-    'cezinha.nome':     v => (D.cezinha.nome = v),
-    'cezinha.numero':   v => { D.cezinha.numero = v; D.cezinha.numeroFmt = v.split(''); },
-    'cezinha.cargo':    v => (D.cezinha.cargo = v),
-    'cezinha.partido':  v => (D.cezinha.partido = v),
-    'cezinha.lead':     v => (D.cezinha.lead = v),
-    'cezinha.foto':     v => (D.cezinha.foto = v),
-
-    'heroi.foto':       v => (D.vilma.foto = v),
+    'heroi.foto':       v => { const u = urlDeFoto(v); if (u) D.vilma.foto = u; },
     'geral.whatsapp':   v => (D.campanha.whatsapp = v.replace(/\D/g, '')),
-    'geral.instagram':  v => (D.campanha.instagram = v.replace(/^@/, '')),
+    'geral.instagram':  v => (D.campanha.instagram = v.replace(/^@/, '').trim()),
   };
+  // instagram.post1…4 e galeria.1…6: posição fixa, para a ordem do painel
+  // ser a ordem do site
+  for (let i = 1; i <= 4; i++) {
+    APLICAR['instagram.post' + i] = v => {
+      const u = postInstagram(v);
+      if (u) (D.instagram ||= { posts: [] }).posts[i - 1] = u;
+    };
+  }
+  for (let i = 1; i <= 6; i++) {
+    APLICAR['galeria.' + i] = v => {
+      const u = urlDeFoto(v);
+      if (u) (D.galeria ||= [])[i - 1] = u;
+    };
+  }
 
   /** Troca o conteúdo dos elementos marcados com data-vt / data-vt-src / data-vt-href. */
   function pintar(mapa) {
@@ -73,7 +60,7 @@
       el.textContent = v;
     });
     document.querySelectorAll('[data-vt-src]').forEach(el => {
-      const v = mapa[el.dataset.vtSrc];
+      const v = urlDeFoto(mapa[el.dataset.vtSrc]);
       if (!v) return;
       el.hidden = false;
       el.src = v;
@@ -85,11 +72,14 @@
       if (v) el.href = v;
     });
 
-    // números da urna e das placas aparecem em vários lugares
-    [['regina', D.regina], ['cezinha', D.cezinha]].forEach(([k, c]) => {
-      if (!mapa[k + '.numero']) return;
-      document.querySelectorAll('[data-num="' + k + '"]').forEach(el => { el.textContent = c.numero; });
-    });
+    // o @ do Instagram aparece em vários lugares (herói, seção, rodapé, menu)
+    const ig = (D.campanha?.instagram || '').replace(/^@/, '');
+    if (ig && /^[\w.]{1,30}$/.test(ig)) {
+      document.querySelectorAll('[data-ig-link]').forEach(a => {
+        a.href = 'https://www.instagram.com/' + ig + '/';
+      });
+      document.querySelectorAll('[data-ig-arroba]').forEach(el => { el.textContent = '@' + ig; });
+    }
 
     // faixa de aviso no topo (só aparece se a equipe escrever algo)
     const aviso = mapa['geral.aviso'];
@@ -126,6 +116,7 @@
       });
 
       CT.mapa = mapa;
+      // pinta sempre — mesmo sem banco, para o @ do dados.js valer em todo lugar
       const aplicar = () => pintar(mapa);
       if (document.readyState === 'loading') addEventListener('DOMContentLoaded', aplicar, { once: true });
       else aplicar();

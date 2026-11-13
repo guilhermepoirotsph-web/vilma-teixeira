@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /* ============================================================================
    auditar-cor.mjs — le todo hex e rgb() do projeto, converte para HSL e lista
-   o que estiver FORA da paleta (verde, amarelo e neutros).
+   o que estiver FORA da paleta do MDB: verde, amarelo, a chama vermelha, o
+   laranja da faixa e neutros. Azul, roxo e rosa (as cores das candidaturas
+   que saíram do site em 13/11/2026) não podem voltar.
 
    Existe porque trocar paleta no olho nao funciona: na primeira passada eu
    deixei o gerar-og.mjs inteiro na cor antiga, e o card do WhatsApp continuou
@@ -71,7 +73,9 @@ function registra(chave, c, f, ln, linha) {
     c.h < 70                ? 'amarelo'   :
     c.h < 170               ? 'verde'     :
     c.h < 255               ? 'AZUL/CIANO' : '?';
-  if (rotulo === 'amarelo' || rotulo === 'verde') return;   // esses ficam
+  // verde e amarelo carregam a página; vermelho (a chama) e laranja (a ponta
+  // da faixa) são do logotipo do MDB e entram só como acento
+  if (['amarelo', 'verde', 'vermelho', 'laranja'].includes(rotulo)) return;
   const k = rotulo + ' ' + chave;
   if (!achados.has(k)) achados.set(k, { c, onde: [] });
   achados.get(k).onde.push(`${f}:${ln}`);
@@ -85,7 +89,7 @@ for (const [k, v] of [...achados]) {
   if (COMBINADO.some(([c, f]) => k === c && v.onde.every(o => o.includes(f)))) achados.delete(k);
 }
 
-const ordem = ['ROXO/ROSA', 'AZUL/CIANO', 'vermelho', 'laranja'];
+const ordem = ['ROXO/ROSA', 'AZUL/CIANO'];
 for (const rot of ordem) {
   const itens = [...achados].filter(([k]) => k.startsWith(rot));
   if (!itens.length) continue;
@@ -96,4 +100,5 @@ for (const rot of ordem) {
 }
 
 if (!achados.size)
-  console.log(String.fromCharCode(10) + String.fromCharCode(10003) + " nada fora da paleta: so verde, amarelo e neutros.");
+  console.log(String.fromCharCode(10) + String.fromCharCode(10003) + " nada fora da paleta do MDB: verde, amarelo, chama, faixa e neutros.");
+process.exitCode = achados.size ? 1 : 0;

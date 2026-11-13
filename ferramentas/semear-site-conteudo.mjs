@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* ============================================================================
-   semear-site-conteudo.mjs — gera o SQL que enche as 28 chaves de
+   semear-site-conteudo.mjs — gera o SQL que enche as chaves de
    `site_conteudo` com o que o site JÁ MOSTRA hoje.
 
    Por que isto precisa existir: as chaves nascem VAZIAS, e o site cai no que
@@ -30,9 +30,16 @@ const D = janela.VT_DADOS;
 if (!D) { console.error('não consegui ler VT_DADOS de assets/js/dados.js'); process.exit(1); }
 
 /* ── 2 · as chaves que existem no banco ─────────────────────────────── */
-const schema = fs.readFileSync(path.join(RAIZ, 'banco/schema.sql'), 'utf8');
-const bloco = schema.slice(schema.indexOf('insert into public.site_conteudo'));
-const chaves = [...bloco.matchAll(/^\s*\('([a-z0-9_.-]+)'/gm)].map(m => m[1]);
+// schema.sql cria as primeiras; 09-so-vilma.sql (13/11/2026) tira as dos
+// candidatos e do vídeo e acrescenta Instagram, galeria e heroi.texto.
+const chavesDe = arq => {
+  const sql = fs.readFileSync(path.join(RAIZ, 'banco', arq), 'utf8');
+  return [...sql.matchAll(/insert into public\.site_conteudo[\s\S]*?on conflict/g)]
+    .flatMap(b => [...b[0].matchAll(/^\s*\('([a-z0-9_.-]+)'/gm)].map(m => m[1]));
+};
+const SAIU = /^(regina|cezinha|video)\.|^heroi\.lead$/;
+const chaves = [...new Set([...chavesDe('schema.sql'), ...chavesDe('09-so-vilma.sql')])]
+  .filter(c => !SAIU.test(c));
 
 /* ── 3 · o HTML, para as chaves que vivem em data-vt ────────────────── */
 const html = fs.readdirSync(path.join(RAIZ, 'partes'))
@@ -55,11 +62,9 @@ const APELIDO = {
   'geral.instagram': () => D.vilma && D.vilma.instagram,
   'geral.whatsapp':  () => D.campanha && D.campanha.whatsapp,
   'heroi.foto':      () => D.vilma && D.vilma.foto,
-  // 'video.titulo' NÃO recebe apelido de propósito: o candidato óbvio seria
-  // `video.legenda`, mas legenda é o texto longo do reel e título é o <h2> da
-  // seção. Semear errado é pior que deixar em branco — o campo em branco a
-  // pessoa preenche; o campo com a coisa errada ela publica sem olhar.
-  'video.titulo':    () => 'O recado da Vilma para Caraguá',
+  'heroi.texto':     () => D.vilma && D.vilma.lead,
+  // instagram.post* e galeria.* NÃO têm padrão de propósito: semear post ou
+  // foto inventada é pior que deixar em branco.
 };
 
 function doDados(chave) {

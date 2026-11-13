@@ -1,6 +1,6 @@
 /* ============================================================================
    heroi.js — abertura do site
-   · entrada do nome (SplitText) e das placas de número
+   · entrada do nome (SplitText) e das três placas de números do mandato
    · paralaxe do herói no scroll
    · palco 3D (Three.js) com o "mar de luzes" do comício — carregado só no idle,
      desligável por ?3d=0, e com queda limpa para o gradiente CSS.
@@ -10,19 +10,25 @@ VT.secao('heroi', () => {
   const heroi = document.querySelector('.heroi');
   if (!heroi) return;
 
-  /* --------------------------------------------------- foto ou lacuna */
-  // Sem a foto, o herói vira uma composição de pôster em coluna única, em vez
-  // de deixar meia tela vazia. Fica intencional, não quebrado.
-  const foto = heroi.querySelector('.heroi__foto');
-  if (foto) {
-    const semFoto = () => {
-      foto.hidden = true;
-      heroi.classList.add('heroi--sem-foto');
-      VT.refresh();
-    };
-    foto.addEventListener('error', semFoto, { once: true });
-    if (foto.complete && foto.naturalWidth === 0) semFoto();
-  }
+  /* --------------------------------------------------- foto ou pôster */
+  // O herói NASCE em layout de pôster (heroi--sem-foto, no HTML): sem JS ou
+  // sem foto, ele já está certo. Achou foto, abre a coluna da direita.
+  const figura = document.getElementById('heroi-figura');
+  const recorte = figura?.querySelector('.foto-recorte');
+  const retrato = figura?.querySelector('.retrato');
+  VT.fotoDaVilma().then(f => {
+    if (f.recorte && recorte) {
+      recorte.src = f.recorte;
+      recorte.hidden = false;
+    } else if (f.retrato && retrato) {
+      retrato.querySelector('img').src = f.retrato;
+      retrato.hidden = false;
+      figura.classList.add('heroi__figura--retrato');
+    } else return;
+    heroi.classList.remove('heroi--sem-foto');
+    VT.refresh();
+  });
+  VT.pintarAvatares();
 
   /* ------------------------------------------------------- animações */
   if (VT.animando && g) {
@@ -104,7 +110,7 @@ VT.secao('heroi', () => {
     const N = movel ? 2600 : 6200;
 
     const cena = new THREE.Scene();
-    cena.fog = new THREE.FogExp2(0x04122b, 0.085);
+    cena.fog = new THREE.FogExp2(0x03140a, 0.085);
 
     const cam = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, .1, 90);
     cam.position.set(0, 2.6, 13);
@@ -119,13 +125,15 @@ VT.secao('heroi', () => {
     const semente = new Float32Array(N);
     const tam = new Float32Array(N);
 
+    // as cores do MDB: verde e amarelo carregam, a chama vermelha só pontua
     const paleta = [
-      new THREE.Color(0xe4185f), // magenta
-      new THREE.Color(0xe9b949), // ouro
-      new THREE.Color(0x3d78d1), // royal
-      new THREE.Color(0xf7f4ee), // marfim
+      new THREE.Color(0x069233), // verde MDB
+      new THREE.Color(0xffcd00), // amarelo MDB
+      new THREE.Color(0xa1c405), // lima (ponta da faixa)
+      new THREE.Color(0xfbfaf5), // branco
+      new THREE.Color(0xe30016), // a chama
     ];
-    const pesos = [.4, .26, .24, .10];
+    const pesos = [.4, .3, .14, .1, .06];
 
     const sortear = () => {
       let r = Math.random(), a = 0;
@@ -189,7 +197,7 @@ VT.secao('heroi', () => {
           gl_PointSize = tam * dpr * (14.0/dist) * (0.62 + 0.38*(1.0 - vNeblina));
           gl_Position = projectionMatrix * mv;
         }`,
-      // sem mix(): com AdditiveBlending, misturar com o marinho SOMA azul em
+      // sem mix(): com AdditiveBlending, misturar com o fundo SOMA cor em
       // vez de lavar. O que apaga o ponto distante é o alfa.
       fragmentShader: `
         varying vec3 vCor; varying float vBrilho; varying float vNeblina;
@@ -207,7 +215,7 @@ VT.secao('heroi', () => {
 
     /* ---------------- feixes de luz do palco (aditivos) ---------------- */
     const feixes = new THREE.Group();
-    const corFeixe = [0xe4185f, 0xe9b949, 0x3d78d1];
+    const corFeixe = [0x069233, 0xffcd00, 0x069233];
     for (let i = 0; i < 3; i++) {
       const gfx = new THREE.ConeGeometry(2.6, 26, 20, 1, true);
       const m = new THREE.MeshBasicMaterial({

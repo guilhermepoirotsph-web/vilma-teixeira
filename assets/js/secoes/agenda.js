@@ -13,12 +13,13 @@ VT.secao('agenda', () => {
   const SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
   const TIPOS = {
-    comicio:   { rot: 'Comício',   tint: 'rgba(255,198,41,.16)',  cor: '#ffc629' },
-    caminhada: { rot: 'Caminhada', tint: 'rgba(224,168,0,.16)', cor: '#e0a800' },
-    carreata:  { rot: 'Carreata',  tint: 'rgba(163,116,0,.16)', cor: '#a37400' },
-    reuniao:   { rot: 'Reunião',   tint: 'rgba(125,220,159,.16)',   cor: '#7ddc9f' },
-    visita:    { rot: 'Visita',    tint: 'rgba(52,193,115,.16)',   cor: '#34c173' },
-    live:      { rot: 'Live',      tint: 'rgba(0,166,80,.16)', cor: '#00a650' },
+    // cores do MDB, escurecidas onde viram texto sobre branco (contraste AA)
+    reuniao:   { rot: 'Reunião',   tint: 'rgba(6,146,51,.12)',   cor: '#007a2b' },
+    visita:    { rot: 'Visita',    tint: 'rgba(161,196,5,.2)',   cor: '#4a5e00' },
+    caminhada: { rot: 'Caminhada', tint: 'rgba(255,205,0,.24)',  cor: '#6e5700' },
+    live:      { rot: 'Live',      tint: 'rgba(10,10,10,.07)',   cor: '#0a0a0a' },
+    comicio:   { rot: 'Comício',   tint: 'rgba(227,0,22,.08)',   cor: '#b10012' },
+    carreata:  { rot: 'Carreata',  tint: 'rgba(243,146,0,.16)',  cor: '#8f4f00' },
     outro:     { rot: 'Agenda',    tint: 'rgba(91,107,96,.08)',   cor: '#5b6b60' },
   };
 
@@ -119,8 +120,8 @@ VT.secao('agenda', () => {
           p.textContent = 'Não há compromissos dessa categoria na agenda. Veja em "Tudo".';
         } else {
           t.textContent = 'Agenda sendo montada';
-          p.textContent = 'Os próximos compromissos entram aqui assim que a assessoria publicar. ' +
-                          'Quer ser avisado? Deixe seu contato logo abaixo.';
+          p.textContent = 'Os próximos compromissos entram aqui assim que a equipe da Vilma publicar. ' +
+                          'Enquanto isso, acompanhe pelo Instagram ou deixe seu contato logo abaixo.';
         }
       }
       return;

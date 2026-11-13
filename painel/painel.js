@@ -730,10 +730,12 @@
     }).join('');
   }
 
+  // os quatro primeiros valem desde 13/11/2026; adesivo/panfletar/levar ficam
+  // para os cadastros antigos (da época da eleição) continuarem legíveis
   const ROT_AJUDA = {
-    divulgar: 'Divulgar', adesivo: 'Adesivo', panfletar: 'Panfletar',
-    reuniao: 'Ceder espaço', levar: 'Levar amigos', evento: 'Ajudar em evento',
-    acompanhar: 'Acompanhar',
+    bairro: 'Demanda do bairro', divulgar: 'Divulgar', reuniao: 'Ceder espaço',
+    evento: 'Ações e eventos', acompanhar: 'Acompanhar',
+    adesivo: 'Adesivo', panfletar: 'Panfletar', levar: 'Levar amigos',
   };
   const rotuloAjuda = v => ROT_AJUDA[v] || v;
 
@@ -976,7 +978,7 @@
         </label>
         <label class="campo">
           <span class="campo__rot">Hashtags</span>
-          <input class="campo__in" name="hashtags" placeholder="#Caraguatatuba #15115"
+          <input class="campo__in" name="hashtags" placeholder="#Caraguatatuba #VereadoraVilma"
                  value="${esc(ct?.hashtags || '')}">
         </label>
         <label class="campo">
@@ -1031,9 +1033,8 @@
 
   /* ══════════════════════════════ SITE — as lacunas editáveis ══ */
   const NOME_GRUPO = {
-    video: '🎬 Vídeo em destaque', heroi: '⭐ Abertura do site',
-    regina: '🌸 Regina Nunes', cezinha: '🔷 Cezinha de Madureira',
-    geral: '⚙️ Geral',
+    heroi: '⭐ Abertura do site', instagram: '📸 Instagram — posts em destaque',
+    galeria: '🖼️ Galeria de fotos da Vilma', geral: '⚙️ Geral',
   };
 
   function pintarSite() {
@@ -1041,8 +1042,8 @@
     $('#site-vazio').hidden = S.site.length > 0;
     if (!S.site.length) { alvo.innerHTML = ''; return; }
 
-    // o vídeo em destaque é o que ele mais mexe: abre primeiro
-    const ORDEM = ['video', 'heroi', 'regina', 'cezinha', 'geral'];
+    // o Instagram é o que ele mais mexe: abre primeiro
+    const ORDEM = ['instagram', 'heroi', 'galeria', 'geral'];
     const grupos = [...new Set(S.site.map(c => c.grupo))]
       .sort((a, b) => {
         const ia = ORDEM.indexOf(a), ib = ORDEM.indexOf(b);
@@ -1186,7 +1187,7 @@
 
     // número da urna precisa ser só dígito, senão o simulador quebra
     if (reg?.tipo === 'numero' && valor && !/^[0-9]{2,6}$/.test(valor)) {
-      toast('O número precisa ter só dígitos (ex.: 15115).', true);
+      toast('O número precisa ter só dígitos (ex.: 141).', true);
       el.value = reg.valor || '';
       return;
     }
@@ -1273,15 +1274,16 @@
       <div class="bloco">
         <ul>
           <li>É onde você <b>alimenta o site</b> sem mexer em código.</li>
-          <li><b>Vídeo em destaque:</b> cole o link do post do Instagram e pronto — o site troca sozinho.</li>
+          <li><b>Instagram:</b> cole o link de até 4 posts ou reels (instagram.com/p/… ou /reel/…) e o site mostra cada um com o player oficial do Instagram. Link de perfil não vale — tem que ser o link do post.</li>
+          <li><b>Galeria:</b> mande até 6 fotos da Vilma (em agenda, nos bairros, na Câmara). Sem nenhuma foto, a galeria nem aparece no site.</li>
           <li><b>Fotos:</b> clique em <b>Escolher foto do computador</b> e mande o arquivo. PNG sem fundo fica melhor; JPG e WEBP também servem, até 5 MB. A foto entra no ar na hora. Se já tiver o link de uma imagem, dá para colar na caixa de baixo.</li>
           <li>Salva sozinho quando você sai do campo — aparece "salvo ✓".</li>
           <li>Campo em branco = o site usa o texto padrão. Nunca fica buraco na tela.</li>
         </ul>
       </div>
       <div class="bloco bloco--alerta">
-        <p style="margin:0"><b>Atenção com os números 15115 e 2223.</b> Se mudar ali,
-        muda no site inteiro e no simulador de urna. Confira antes de salvar.</p>
+        <p style="margin:0"><b>Só foto e post da própria Vilma.</b> O site é dela: nada de
+        material de outro político, nem foto com brasão ou fundo oficial da Câmara.</p>
       </div>`);
 
     blocos.push(`

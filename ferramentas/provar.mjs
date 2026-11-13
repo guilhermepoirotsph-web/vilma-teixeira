@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /* ============================================================================
-   provar.mjs — E2E do site, como um eleitor usaria.
-   Prova de verdade (não "deve funcionar"): urna, formulário, LGPD e agenda.
+   provar.mjs — E2E do site, como um morador de Caraguá usaria.
+   Prova de verdade (não "deve funcionar"): o site é só da Vilma, nas cores do
+   MDB; Instagram, galeria, formulário, LGPD e agenda.
    Uso: node ferramentas/provar.mjs [--url=http://localhost:8803/]
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
@@ -63,7 +64,12 @@ pg.on('console', m => {
   if (m.type() === 'error' && !/404|ERR_FAILED/.test(t)) errosJS.push(t.slice(0, 200));
 });
 
-await pg.goto(URL, { waitUntil: 'networkidle2' });
+/* 'load' + fontes prontas, e não 'networkidle2': o evento de rede ociosa do
+   Chrome às vezes nunca chega quando as fontes do Google atrasam no caminho
+   (medido em 13/11/2026: mesma página, 2 s numa rodada e 30 s de timeout na
+   seguinte). A prova mede o SITE, não a rede de quem roda a bateria. */
+await pg.goto(URL, { waitUntil: 'load', timeout: 60000 });
+await pg.evaluate(() => document.fonts?.ready).catch(() => {});
 await new Promise(r => setTimeout(r, 2800));
 
 const irPara = async id => {
@@ -100,7 +106,7 @@ const irPara = async id => {
     return { texto: b.textContent.trim(), dentro: r.top >= 0 && r.bottom <= innerHeight,
              alto: r.height >= 44 };
   });
-  (cta.dentro && cta.alto && /apoiar/i.test(cta.texto))
+  (cta.dentro && cta.alto && /projetos/i.test(cta.texto))
     ? ok('CTA principal visível na primeira tela', cta.texto)
     : bad('CTA do herói', JSON.stringify(cta));
 }
@@ -161,115 +167,110 @@ const irPara = async id => {
   await new Promise(r => setTimeout(r, 600));
 }
 
-/* ══════════════════════════════════════════════════ 1 · URNA ELETRÔNICA */
-await irPara('urna');
-const tecla = async t => {
-  await pg.click(`.tecla[data-t="${t}"]`);
-  await new Promise(r => setTimeout(r, 90));
-};
-const acao = async a => {
-  await pg.click(`[data-a="${a}"]`);
-  await new Promise(r => setTimeout(r, 420));
-};
-const lcd = () => pg.evaluate(() => ({
-  cargo: document.getElementById('lcd-cargo').textContent.trim(),
-  passo: document.getElementById('lcd-passo').textContent.trim(),
-  digitos: [...document.querySelectorAll('.lcd__cx')].map(c => c.textContent).join(''),
-  nome: document.getElementById('lcd-nome').textContent.trim(),
-  partido: document.getElementById('lcd-partido').textContent.trim(),
-  fichaVisivel: !document.getElementById('lcd-ficha').hidden,
-  avisoVisivel: !document.getElementById('lcd-aviso').hidden,
-  aviso: document.getElementById('lcd-aviso').textContent.trim().slice(0, 60),
-  fimVisivel: !document.getElementById('lcd-fim').hidden,
-  fimTexto: document.getElementById('lcd-fim').textContent.trim().slice(0, 220),
-}));
-
-/* A nav é FIXA. Se a máquina não couber, a fileira de cima do teclado fica
-   atrás dela e o clique vai para o cabeçalho — a tecla 1 chegou a cair em
-   y=57 (09/09). Aqui o teste rola como o site rola (VT.irPara) e mede. */
+/* ════════════════════════════════ 1 · SÓ A VILMA, NAS CORES DO MDB ══ */
 {
-  await pg.evaluate(() => window.VT.irPara('#urna-maquina'));
-  await new Promise(r => setTimeout(r, 1200));
-  const m = await pg.evaluate(() => {
-    const nav = document.querySelector('.nav').getBoundingClientRect().height;
-    const teclas = [...document.querySelectorAll('.tecla:not([disabled])')].map(t => {
-      const r = t.getBoundingClientRect();
-      const cx = Math.round(r.left + r.width / 2), cy = Math.round(r.top + r.height / 2);
-      const alvo = document.elementFromPoint(cx, cy);
-      return { rot: t.dataset.t || t.dataset.a, topo: Math.round(r.top),
-               recebe: Boolean(alvo && (alvo === t || t.contains(alvo))) };
-    });
-    const maq = document.getElementById('urna-maquina').getBoundingClientRect();
-    return { nav: Math.round(nav), alturaMaquina: Math.round(maq.height), alturaJanela: innerHeight,
-             sobPorNav: teclas.filter(t => t.topo < nav).map(t => t.rot),
-             semReceber: teclas.filter(t => !t.recebe).map(t => t.rot) };
+  /* Desde 13/11/2026 o site é só dela. Nenhum outro político, número de urna
+     ou simulador pode sobrar — nem no texto, nem no <head> (o card do WhatsApp
+     e o Google leem o <head>, não a tela). */
+  const sobra = await pg.evaluate(() => {
+    const txt = document.body.textContent + ' ' + document.title + ' ' +
+      [...document.querySelectorAll('meta[content]')].map(m => m.content).join(' ');
+    const achados = txt.match(/Regina|Cezinha|Madureira|15115|\b2223\b|simulador de urna|Deputad[ao]/gi) || [];
+    return [...new Set(achados)];
   });
-  m.sobPorNav.length === 0
-    ? ok('nenhuma tecla da urna fica atrás da nav fixa')
-    : bad('teclas escondidas atrás da nav', m.sobPorNav.join(','));
-  m.semReceber.length === 0
-    ? ok('toda tecla recebe o próprio clique', m.alturaMaquina + 'px de máquina em ' + m.alturaJanela + 'px de janela')
-    : bad('tecla que não recebe o clique', m.semReceber.join(','));
+  sobra.length === 0
+    ? ok('nenhum outro político, número de urna ou simulador no site')
+    : bad('sobrou referência a outra candidatura', sobra.join(', '));
+
+  const secoes = await pg.evaluate(() =>
+    ['uniao', 'regina', 'cezinha', 'urna', 'video'].filter(id => document.getElementById(id)));
+  secoes.length === 0 ? ok('seções antigas (união, Regina, Cezinha, urna, vídeo) saíram')
+                      : bad('seção antiga ainda no HTML', secoes.join(', '));
+
+  // a paleta: os tokens do MDB e o CTA principal em amarelo MDB com texto preto
+  const cor = await pg.evaluate(() => {
+    const css = getComputedStyle(document.documentElement);
+    const cta = getComputedStyle(document.querySelector('.heroi__acoes .btn'));
+    return {
+      verde: css.getPropertyValue('--mdb-verde').trim().toLowerCase(),
+      amarelo: css.getPropertyValue('--mdb-amarelo').trim().toLowerCase(),
+      vermelho: css.getPropertyValue('--mdb-vermelho').trim().toLowerCase(),
+      ctaFundo: cta.backgroundColor, ctaTexto: cta.color,
+      tema: document.querySelector('meta[name=theme-color]')?.content,
+    };
+  });
+  (cor.verde === '#069233' && cor.amarelo === '#ffcd00' && cor.vermelho === '#e30016')
+    ? ok('paleta do MDB nos tokens (verde #069233, amarelo #ffcd00, chama #e30016)')
+    : bad('tokens de cor fora da paleta do MDB', JSON.stringify(cor));
+  (cor.ctaFundo === 'rgb(255, 205, 0)' && cor.ctaTexto === 'rgb(10, 10, 10)')
+    ? ok('CTA do herói em amarelo MDB com texto preto (contraste 13:1)')
+    : bad('CTA do herói fora da paleta', cor.ctaFundo + ' / ' + cor.ctaTexto);
+
+  // a lei dela, com número e fonte
+  const lei = await pg.evaluate(() => {
+    const el = document.getElementById('lei');
+    return el ? { num: /2\.832/.test(el.textContent), fonte: /Diário Oficial/.test(el.textContent),
+                  autora: /Vilma Teixeira/.test(el.textContent) } : null;
+  });
+  lei && lei.num && lei.fonte && lei.autora
+    ? ok('Lei 2.832/2026 em destaque, com autora e fonte (Diário Oficial)')
+    : bad('bloco da lei incompleto', JSON.stringify(lei));
 }
 
-let e = await lcd();
-e.cargo === 'DEPUTADO FEDERAL' ? ok('urna abre no Deputado Federal') : bad('urna abre no cargo certo', e.cargo);
-e.digitos === '' ? ok('urna começa vazia') : bad('urna começa vazia', e.digitos);
+/* ════════════════════════════════════════════ 1-B · INSTAGRAM E FOTOS ══ */
+{
+  await irPara('instagram');
+  await new Promise(r => setTimeout(r, 900));
+  const ig = await pg.evaluate(() => ({
+    links: [...document.querySelectorAll('[data-ig-link]')].map(a => a.getAttribute('href')),
+    perfil: Boolean(document.querySelector('#instagram .perfil')),
+    gradeEscondida: document.getElementById('insta-grade')?.hidden,
+    posts: document.querySelectorAll('#insta-grade .insta__post').length,
+  }));
+  (ig.links.length >= 4 && ig.links.every(h => h === 'https://www.instagram.com/vereadoravilma/'))
+    ? ok('todo botão de Instagram leva ao @vereadoravilma', ig.links.length + ' links')
+    : bad('link de Instagram errado', JSON.stringify(ig.links));
+  ig.perfil ? ok('cartão de perfil do Instagram na seção') : bad('sem cartão de perfil');
+  (ig.gradeEscondida && ig.posts === 0)
+    ? ok('sem post escolhido no painel, nenhum post aparece (nada inventado)')
+    : bad('grade de posts apareceu sem post escolhido', JSON.stringify(ig));
 
-// número errado tem que ser recusado
-for (const d of '9999') await tecla(d);
-e = await lcd();
-e.avisoVisivel ? ok('número não apoiado é recusado com aviso') : bad('número errado deveria avisar');
-await acao('confirma');
-e = await lcd();
-e.cargo === 'DEPUTADO FEDERAL'
-  ? ok('CONFIRMA não avança com número inválido')
-  : bad('CONFIRMA avançou com número inválido!', e.cargo);
+  const fotos = await pg.evaluate(() => ({
+    secao: document.getElementById('fotos')?.hidden,
+    menu: [...document.querySelectorAll('[data-so-com-fotos]')].every(a => a.hidden),
+  }));
+  (fotos.secao && fotos.menu)
+    ? ok('sem foto, a galeria e o link "Fotos" do menu ficam escondidos (nunca buraco)')
+    : bad('galeria vazia apareceu', JSON.stringify(fotos));
+}
 
-// corrige e vota certo
-await acao('corrige');
-e = await lcd();
-e.digitos === '' ? ok('CORRIGE limpa os dígitos') : bad('CORRIGE não limpou', e.digitos);
-
-for (const d of '2223') await tecla(d);
-e = await lcd();
-e.fichaVisivel && /Cezinha/.test(e.nome)
-  ? ok('2223 mostra a ficha do Cezinha de Madureira', e.nome + ' · ' + e.partido)
-  : bad('2223 não mostrou a ficha', JSON.stringify(e));
-e.partido === 'PL' ? ok('partido do Cezinha correto (PL)') : bad('partido errado', e.partido);
-
-await acao('confirma');
-e = await lcd();
-// o rótulo sai do cargo cadastrado ("Deputada Estadual" para a Regina),
-// por isso aceita as duas formas
-/^DEPUTAD[AO] ESTADUAL$/.test(e.cargo) && e.digitos === ''
-  ? ok('passa para a 2ª fase com a tela limpa', e.cargo)
-  : bad('não passou para a 2ª fase', JSON.stringify(e));
-
-for (const d of '15115') await tecla(d);
-e = await lcd();
-e.fichaVisivel && /Regina/.test(e.nome)
-  ? ok('15115 mostra a ficha da Regina Nunes', e.nome + ' · ' + e.partido)
-  : bad('15115 não mostrou a ficha', JSON.stringify(e));
-
-await acao('confirma');
-await new Promise(r => setTimeout(r, 700));
-e = await lcd();
-e.fimVisivel ? ok('urna chega no FIM') : bad('urna não chegou no FIM');
-/2223/.test(e.fimTexto) && /15115/.test(e.fimTexto)
-  ? ok('resumo do FIM traz os dois votos')
-  : bad('resumo incompleto', e.fimTexto);
-
-// teclado físico
-const temDenovo = await pg.$('.urna__denovo');
-if (temDenovo) {
-  await temDenovo.click();
-  await new Promise(r => setTimeout(r, 350));
-  await pg.keyboard.press('2'); await pg.keyboard.press('2');
-  await new Promise(r => setTimeout(r, 200));
-  e = await lcd();
-  e.digitos === '22' ? ok('teclado físico digita na urna') : bad('teclado físico não digitou', e.digitos);
-} else bad('botão "treinar de novo" não apareceu');
+/* Numa aba à parte: um post escolhido vira o embed oficial — e o que não é
+   link de post (perfil, encurtador, texto) é descartado pela peneira do
+   conteudo.js. O embed.js é barrado aqui: a prova não depende do Instagram
+   estar no ar, e o cartão de reserva é o que fica se ele for bloqueado. */
+{
+  const pg2 = await nav.newPage();
+  await pg2.setRequestInterception(true);
+  pg2.on('request', r => (/config\.local\.js$|instagram\.com\/embed\.js/.test(r.url()) || EH_SUPABASE.test(r.url()))
+    ? r.abort() : r.continue());
+  pg2.on('pageerror', e => errosJS.push('[aba 2] ' + String(e).slice(0, 200)));
+  await pg2.goto(URL + '?anim=0', { waitUntil: 'load', timeout: 60000 });
+  await new Promise(r => setTimeout(r, 1200));
+  await pg2.evaluate(() => {
+    window.VT_DADOS.instagram.posts = ['https://www.instagram.com/p/TESTE12345/'];
+    document.getElementById('instagram').scrollIntoView();
+  });
+  await new Promise(r => setTimeout(r, 1500));
+  const post = await pg2.evaluate(() => ({
+    n: document.querySelectorAll('#insta-grade .insta__post').length,
+    permalink: document.querySelector('#insta-grade .instagram-media')?.dataset.instgrmPermalink,
+    reserva: document.querySelector('#insta-grade .insta__reserva')?.getAttribute('href'),
+  }));
+  (post.n === 1 && post.permalink === 'https://www.instagram.com/p/TESTE12345/' && post.reserva === post.permalink)
+    ? ok('post escolhido vira embed oficial, com cartão "ver no Instagram" de reserva')
+    : bad('post do Instagram não montou', JSON.stringify(post));
+  await pg2.close();
+}
 
 /* ═══════════════════════════════════════════════════ 2 · FORMULÁRIO */
 await irPara('apoie');
@@ -297,36 +298,27 @@ await new Promise(r => setTimeout(r, 450));
 tela = await pg.evaluate(() => document.querySelector('.form__tela.on')?.dataset.tela);
 tela === '2' ? ok('passo 1 → 2 com dados válidos') : bad('não avançou para o passo 2', tela);
 
+await pg.click('input[name=ajuda][value=bairro]');
 await pg.click('input[name=ajuda][value=divulgar]');
-await pg.click('input[name=ajuda][value=panfletar]');
 await pg.click('[data-ir="3"]');
 await new Promise(r => setTimeout(r, 450));
 tela = await pg.evaluate(() => document.querySelector('.form__tela.on')?.dataset.tela);
 tela === '3' ? ok('passo 2 → 3') : bad('não avançou para o passo 3', tela);
 
-// LGPD: consentimento específico só aparece ao marcar apoio
-let sensivelEscondido = await pg.$eval('#aceite-sensivel', el => el.hidden);
-sensivelEscondido ? ok('consentimento sensível nasce escondido') : bad('consentimento sensível já aparecia');
+// o formulário não pergunta mais nada sobre voto ou candidatura
+const pedeApoio = await pg.evaluate(() =>
+  document.querySelectorAll('input[name=apoio], #aceite-sensivel, input[name=consente_apoio]').length);
+pedeApoio === 0 ? ok('formulário não pede declaração de apoio a candidatura (dado sensível fora)')
+                : bad('formulário ainda pede declaração de apoio', pedeApoio + ' campo(s)');
 
-await pg.click('input[name=apoio][value="15115"]');
-await new Promise(r => setTimeout(r, 250));
-sensivelEscondido = await pg.$eval('#aceite-sensivel', el => el.hidden);
-!sensivelEscondido
-  ? ok('marcar apoio revela o consentimento específico (LGPD art. 11, I)')
-  : bad('consentimento específico não apareceu');
-
-// tenta enviar com apoio marcado e sem o consentimento específico
-await pg.click('input[name=consente]');
+// sem consentimento não envia
 await pg.click('#form-enviar');
-await new Promise(r => setTimeout(r, 600));
+await new Promise(r => setTimeout(r, 500));
 const okVisivel1 = await pg.$eval('#form-ok', el => !el.hidden);
-const erroTxt = await pg.$eval('#form-erro', el => el.hidden ? '' : el.textContent.trim());
-!okVisivel1 && /consentimento/i.test(erroTxt)
-  ? ok('sem consentimento específico o apoio NÃO é enviado')
-  : bad('enviou dado sensível sem consentimento!', erroTxt || 'enviou');
+!okVisivel1 ? ok('sem marcar a autorização, nada é enviado (LGPD)') : bad('enviou sem consentimento!');
 
-// agora com o consentimento
-await pg.click('#aceite-sensivel input');
+// com consentimento
+await pg.click('input[name=consente]');
 await pg.click('#form-enviar');
 await new Promise(r => setTimeout(r, 900));
 const okVisivel2 = await pg.$eval('#form-ok', el => !el.hidden);
@@ -336,7 +328,11 @@ const fila = await pg.evaluate(() => JSON.parse(localStorage.getItem('vt_fila_ap
 fila.length === 1 ? ok('sem banco, o cadastro cai na fila local (não se perde)')
                   : bad('fila local com ' + fila.length + ' item(ns)');
 if (fila[0]) {
-  fila[0].apoio?.includes('15115') ? ok('apoio consentido foi gravado') : bad('apoio não gravado');
+  (Array.isArray(fila[0].apoio) && fila[0].apoio.length === 0 && fila[0].consente_apoio === false)
+    ? ok('nenhuma declaração de apoio sai do site') : bad('saiu declaração de apoio', JSON.stringify(fila[0].apoio));
+  /texto que a pessoa LEU|Vilma Teixeira/.test(fila[0].texto_consent || '')
+    ? ok('o texto da autorização que a pessoa leu vai junto (prova de consentimento)')
+    : bad('sem o texto do consentimento', fila[0].texto_consent);
   !('cpf' in fila[0]) && !('titulo' in fila[0]) ? ok('nenhum CPF/título coletado') : bad('coletou documento!');
   fila[0].whatsapp === '12988887777' ? ok('WhatsApp normalizado (só dígitos)') : bad('whatsapp', fila[0].whatsapp);
 }
@@ -401,7 +397,7 @@ const geral = await pg.evaluate(() => ({
   canonical: document.querySelector('link[rel=canonical]')?.getAttribute('href') || '',
   ogImagem: document.querySelector('meta[property="og:image"]')?.getAttribute('content') || '',
   rodapeResp: /Vilma Teixeira de Oliveira Santos/.test(document.querySelector('.rodape__legal')?.textContent || ''),
-  numerosOk: /15115/.test(document.body.textContent) && /2223/.test(document.body.textContent),
+  mdb: /MDB/.test(document.querySelector('.rodape')?.textContent || ''),
   privacidade: Boolean(document.querySelector('a[href="privacidade.html"]')),
 }));
 geral.h1 === 1 ? ok('exatamente um <h1>') : bad('h1', geral.h1);
@@ -409,7 +405,7 @@ geral.semAlt === 0 ? ok('toda imagem tem alt') : bad('imagens sem alt', geral.se
 geral.overflowX <= 0 ? ok('sem vazamento horizontal') : bad('overflowX', geral.overflowX);
 geral.rodapeResp ? ok('rodapé identifica o responsável (art. 57-B)') : bad('rodapé sem identificação');
 geral.privacidade ? ok('link de privacidade presente') : bad('sem link de privacidade');
-geral.numerosOk ? ok('números 15115 e 2223 na página') : bad('faltou número na página');
+geral.mdb ? ok('rodapé identifica o partido (MDB)') : bad('rodapé sem o partido');
 /* O site tem DOIS estados legítimos — prévia e publicado — e a prova precisa
    medir em qual ele está, não supor um deles. Exigir `noindex` sempre fazia a
    bateria ficar vermelha no minuto seguinte à virada, bloqueando a Action

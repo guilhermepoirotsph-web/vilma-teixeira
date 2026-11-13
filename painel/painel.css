@@ -3,14 +3,15 @@
    Mesma identidade do site, densidade de ferramenta de trabalho.
    ========================================================================== */
 :root{
-  --marinho-900:#060f0a; --marinho-800:#0a1a11; --marinho-700:#0f2a1b;
-  --royal:#008a42; --royal-claro:#34c173;
-  --magenta:#00a650; --magenta-300:#7ddc9f; --magenta-800:#00713a;
-  --ouro:#ffc629; --ouro-600:#e0a800; --verde:#00a650; --verde-esc:#008a42;
+  /* paleta do MDB (a mesma do site — assets/css/base.css) */
+  --marinho-900:#03140a; --marinho-800:#062012; --marinho-700:#0a2d18;
+  --royal:#007a2b; --royal-claro:#4cc25f;
+  --magenta:#069233; --magenta-300:#4cc25f; --magenta-800:#007a2b;
+  --ouro:#ffcd00; --ouro-600:#8a6d00; --verde:#069233; --verde-esc:#007a2b;
   --marfim:#fbfaf6; --texto:#f2f7f3; --texto-2:rgba(242,247,243,.70);
   --texto-3:rgba(242,247,243,.44);
   --linha:rgba(251,250,246,.14); --linha-2:rgba(251,250,246,.08);
-  --painel:#0c1f14; --painel-2:#102a1b; --fundo:#060f0a;
+  --painel:#0a2414; --painel-2:#0e2e1a; --fundo:#03140a;
   --f-t:'Archivo',system-ui,sans-serif; --f-x:'Manrope',system-ui,sans-serif;
   --f-a:'Great Vibes',cursive;
   --raio:14px; --raio-g:20px;

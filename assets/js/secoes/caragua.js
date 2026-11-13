@@ -24,11 +24,8 @@ VT.secao('caragua', () => {
   encher('marquee-2', true);
 
   document.querySelectorAll('.caragua__n[data-n]').forEach(el => {
-    const n = Number(el.dataset.n);
-    VT.contar(el, n, {
-      gatilho: el.closest('.cartao'),
-      duracao: 1.6,
-      formatar: v => Math.round(v).toLocaleString('pt-BR') + (n === 30 ? '' : ''),
-    });
+    // "desde 1995" é conta, não número fixo: em 2027 o site não envelhece
+    if (el.dataset.desde) el.dataset.n = String(new Date().getFullYear() - Number(el.dataset.desde));
+    VT.contar(el, Number(el.dataset.n), { gatilho: el.closest('.cartao'), duracao: 1.6 });
   });
 });

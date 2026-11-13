@@ -1,11 +1,13 @@
 /* ============================================================================
-   apoie.js — formulário de apoio (o "controle de possíveis votos").
+   apoie.js — "Fale com a Vilma": o formulário de contato e participação.
+
+   Desde 13/11/2026 o formulário NÃO pede declaração de apoio a candidatura
+   nenhuma (a eleição de 2026 passou e o site é só da Vilma). O banco segue
+   aceitando a coluna `apoio` vazia — quem já tinha declarado continua coberto
+   pelas mesmas regras de consentimento e exclusão.
 
    Cuidados que estão no código, não só no texto:
-   · consentimento comum obrigatório + consentimento ESPECÍFICO e destacado
-     para a declaração de apoio (posicionamento político é dado sensível —
-     LGPD art. 5º II e art. 11, I). O específico só aparece se a pessoa marcar
-     algum número, e sem ele o apoio NÃO é enviado.
+   · consentimento obrigatório, com o texto que a pessoa LEU guardado junto.
    · honeypot invisível contra robô.
    · nenhum CPF, título de eleitor ou documento é pedido.
    · sem banco (ou com o banco fora do ar) o cadastro cai na fila local e o
@@ -22,7 +24,6 @@ VT.secao('apoie', () => {
   const passos = [...form.querySelectorAll('.form__passo')];
   const elErro = document.getElementById('form-erro');
   const elOk = document.getElementById('form-ok');
-  const aceiteSensivel = document.getElementById('aceite-sensivel');
 
   /* ------------------------------------------------------------ bairros */
   const sel = form.querySelector('select[name=bairro]');
@@ -46,18 +47,6 @@ VT.secao('apoie', () => {
     else if (v.length > 2) v = `(${v.slice(0, 2)}) ${v.slice(2)}`;
     else if (v.length) v = `(${v}`;
     zap.value = v;
-  });
-
-  /* --------------------------------------- consentimento específico on/off */
-  const apoios = () => [...form.querySelectorAll('input[name=apoio]:checked')].map(i => i.value);
-  form.querySelectorAll('input[name=apoio]').forEach(i => {
-    i.addEventListener('change', () => {
-      const tem = apoios().length > 0;
-      if (aceiteSensivel) {
-        aceiteSensivel.hidden = !tem;
-        if (!tem) aceiteSensivel.querySelector('input').checked = false;
-      }
-    });
   });
 
   /* --------------------------------------------------------- validação */
@@ -96,13 +85,6 @@ VT.secao('apoie', () => {
     if (n === 3) {
       const c = $('input[name=consente]');
       if (!c.checked) { erroCampo(c, 'Precisamos da sua autorização para guardar o contato.'); ok = false; }
-
-      if (apoios().length && aceiteSensivel && !aceiteSensivel.querySelector('input').checked) {
-        aceiteSensivel.classList.add('ruim');
-        mostrarErro('Para registrar a declaração de apoio precisamos do consentimento específico — ' +
-                    'ou desmarque os números.');
-        ok = false;
-      }
     }
     return ok;
   }
@@ -145,22 +127,21 @@ VT.secao('apoie', () => {
   /* -------------------------------------------------- mensagem do zap */
   function textoZap(d) {
     const linhas = [
-      'Olá! Quero somar com a campanha da Vereadora Vilma. 💪',
+      'Olá, Vilma! Vim pelo seu site. 💚',
       '',
       'Nome: ' + d.nome,
       'WhatsApp: ' + d.whatsapp,
       'Bairro: ' + d.bairro,
     ];
     if (d.email) linhas.push('E-mail: ' + d.email);
-    if (d.ajuda?.length) linhas.push('Posso ajudar com: ' + d.ajuda.map(rotuloAjuda).join(', '));
-    if (d.consente_apoio && d.apoio?.length) linhas.push('Vou de: ' + d.apoio.join(' e '));
+    if (d.ajuda?.length) linhas.push('Quero participar: ' + d.ajuda.map(rotuloAjuda).join(', '));
     if (d.recado) linhas.push('', 'Recado: ' + d.recado);
     return linhas.join('\n');
   }
   const ROTULOS = {
-    divulgar: 'divulgar nas redes', adesivo: 'adesivo no carro', panfletar: 'panfletar no bairro',
-    reuniao: 'ceder espaço pra reunião', levar: 'levar amigos pra votar',
-    evento: 'ajudar em evento', acompanhar: 'acompanhar',
+    bairro: 'levar uma demanda do bairro', divulgar: 'divulgar o trabalho nas redes',
+    reuniao: 'ceder espaço pra reunião', evento: 'ajudar em ações e eventos',
+    acompanhar: 'acompanhar',
   };
   const rotuloAjuda = v => ROTULOS[v] || v;
 
@@ -191,14 +172,12 @@ VT.secao('apoie', () => {
       email: $('input[name=email]').value.trim() || null,
       ajuda: [...form.querySelectorAll('input[name=ajuda]:checked')].map(i => i.value),
       recado: $('textarea[name=recado]').value.trim() || null,
-      apoio: apoios(),
-      consente_apoio: Boolean(aceiteSensivel && !aceiteSensivel.hidden &&
-                              aceiteSensivel.querySelector('input').checked),
+      // o site não coleta mais declaração de apoio: vai sempre vazio
+      apoio: [],
+      consente_apoio: false,
       origem: 'site',
       texto_consent: textoDoAceite(),
     };
-    // sem consentimento específico, a declaração de apoio não sai daqui
-    if (!dados.consente_apoio) dados.apoio = [];
 
     enviando = true;
     const btn = document.getElementById('form-enviar');
@@ -255,9 +234,9 @@ VT.secao('apoie', () => {
       }
     } else {
       msgEl.innerHTML = (primeiro ? 'Obrigada, <b>' + VT.escapar(primeiro) + '</b>! ' : 'Obrigada! ') +
-        'A equipe da Vilma vai entrar em contato com o material da campanha.';
+        'A equipe da Vilma vai falar com você.';
       if (temZap) {
-        waEl.href = VT.wa('Oi! Acabei de me cadastrar no site da Vereadora Vilma. 💚');
+        waEl.href = VT.wa('Oi, Vilma! Acabei de deixar meu contato no seu site. 💚');
         waEl.hidden = false;
       } else if (waEl) {
         waEl.href = 'https://www.instagram.com/' + encodeURIComponent(ig) + '/';
@@ -279,7 +258,6 @@ VT.secao('apoie', () => {
 
   document.getElementById('form-outro')?.addEventListener('click', () => {
     form.reset();
-    if (aceiteSensivel) aceiteSensivel.hidden = true;
     elOk.hidden = true;
     form.querySelector('.form__passos').style.display = '';
     ir(1);
@@ -287,7 +265,7 @@ VT.secao('apoie', () => {
 
   /* ----------------------------------------------------------- confete */
   function confete() {
-    const cores = ['#00a650', '#ffc629', '#00a650', '#fbfaf6'];
+    const cores = ['#069233', '#ffcd00', '#a1c405', '#fbfaf5', '#f39200'];
     const r = form.getBoundingClientRect();
     for (let i = 0; i < 80; i++) {
       const p = document.createElement('i');
@@ -310,13 +288,9 @@ VT.secao('apoie', () => {
 
   /* --------------------------------------------------------- entrada */
   if (VT.animando && g) {
-    g.from('.apoie__form-wrap', {
-      opacity: 0, y: 50, duration: 1, ease: 'power3.out',
+    g.fromTo('.apoie__form-wrap', { opacity: 0, y: 50 }, {
+      opacity: 1, y: 0, duration: 1, ease: 'power3.out',
       scrollTrigger: { trigger: '.apoie__caixa', start: 'top 80%', once: true },
-    });
-    g.from('.apoie__lista li', {
-      opacity: 0, x: -20, stagger: .1, duration: .6, ease: 'power2.out',
-      scrollTrigger: { trigger: '.apoie__lista', start: 'top 88%', once: true },
     });
   }
   if (barra) barra.style.width = (1 / telas.length * 100) + '%';

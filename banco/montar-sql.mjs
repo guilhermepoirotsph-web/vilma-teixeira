@@ -29,6 +29,7 @@ export const ORDEM = [
   '06-agenda-bot.sql',   // a agenda pelo chat: identidade, código, limites
   '07-entrada-chat.sql', // porta de entrada: equipe, SAIR, boas-vindas, ignorar
   '08-fotos.sql',        // balde do Storage: o social media sobe foto pelo painel
+  '09-so-vilma.sql',     // 13/11/2026: o site vira só da Vilma (sai Regina/Cezinha/vídeo)
 ];
 
 export async function montar() {

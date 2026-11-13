@@ -152,22 +152,16 @@
     },
 
     /**
-     * Escada de imagem de uma pessoa, do melhor para o pior, sem nunca deixar
-     * buraco na tela:
-     *   1. recorte PNG sem fundo  (.foto-recorte)  — o ideal
-     *   2. retrato emoldurado     (.retrato)       — funciona com foto comum
-     *   3. layout de pôster       (aoFaltarTudo)   — sem foto nenhuma
+     * A foto da Vilma, resolvida UMA vez e usada no site inteiro (herói,
+     * cartão do Instagram, formulário). Ordem de preferência:
+     *   1. o que a equipe subiu no painel (Site → Abertura → Foto da Vilma)
+     *   2. fotos/vilma.png           — recorte sem fundo
+     *   3. fotos/vilma-retrato.jpg   — retrato comum, vai emoldurado
+     * Devolve { recorte, retrato } — cada um é a URL ou null. Os dois nulos =
+     * não há foto, e cada seção cai no seu layout sem foto (nunca buraco).
      */
-    escadaDeFoto(figura, aoFaltarTudo) {
-      if (!figura) return;
-      const recorte = figura.querySelector('.foto-recorte');
-      const retrato = figura.querySelector('.retrato');
-      const retratoImg = retrato && retrato.querySelector('img');
-
-      // Sonda com Image() em vez de esperar load/error do elemento da página:
-      // imagem com loading="lazy" dentro de um elemento hidden NUNCA é buscada,
-      // então nem load nem error disparam e a escada ficava travada no primeiro
-      // degrau. A sonda força a requisição e responde sempre.
+    fotoDaVilma() {
+      if (VT._foto) return VT._foto;
       const existe = src => new Promise(responder => {
         if (!src) return responder(false);
         const sonda = new Image();
@@ -175,25 +169,36 @@
         sonda.onerror = () => responder(false);
         sonda.src = src;
       });
-
-      (async () => {
-        if (recorte && await existe(recorte.getAttribute('src'))) {
-          recorte.hidden = false;
-          if (retrato) retrato.hidden = true;
-          return VT.refresh();
-        }
-        if (recorte) recorte.hidden = true;
-
-        if (retratoImg && await existe(retratoImg.getAttribute('src'))) {
-          retratoImg.loading = 'eager';
-          retrato.hidden = false;
-          return VT.refresh();
-        }
-        if (retrato) retrato.hidden = true;
-
-        if (aoFaltarTudo) aoFaltarTudo();
-        VT.refresh();
+      VT._foto = (async () => {
+        try { await window.VT_CONTEUDO?.pronto; } catch {}
+        const v = window.VT_DADOS?.vilma || {};
+        const recorte = v.foto || 'fotos/vilma.png';
+        const retrato = v.retrato || 'fotos/vilma-retrato.jpg';
+        // PNG pode ser recorte (sem fundo); JPG/WEBP vindo do painel é retrato
+        const ehRecorte = /\.png(\?|$)/i.test(recorte);
+        if (await existe(recorte)) return ehRecorte ? { recorte, retrato: null } : { recorte: null, retrato: recorte };
+        if (await existe(retrato)) return { recorte: null, retrato };
+        return { recorte: null, retrato: null };
       })();
+      return VT._foto;
+    },
+
+    /** Põe a foto da Vilma nos avatares redondos (cartões de perfil). */
+    pintarAvatares() {
+      VT.fotoDaVilma().then(f => {
+        const src = f.recorte || f.retrato;
+        if (!src) return;
+        document.querySelectorAll('.perfil__foto').forEach(el => {
+          if (el.querySelector('img')) return;
+          const img = new Image();
+          img.alt = '';
+          img.decoding = 'async';
+          img.src = src;
+          img.className = f.recorte ? 'perfil__img perfil__img--recorte' : 'perfil__img';
+          el.appendChild(img);
+          el.classList.add('com-foto');
+        });
+      });
     },
 
     /** Roda fn quando o elemento aparece (para carregar coisa pesada tarde). */

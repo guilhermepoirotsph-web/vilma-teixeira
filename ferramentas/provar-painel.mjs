@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /* ============================================================================
    provar-painel.mjs — E2E dos DOIS painéis, cada um com o login do seu papel,
    contra o Supabase falso (Postgres de verdade + RLS de verdade).
@@ -260,43 +260,26 @@ async function entrar(pg, email, senha = 'teste1234') {
   /Reel da caminhada/.test(card || '') ? ok('social media cria pauta na coluna certa', card)
                                        : bad('pauta não apareceu', card);
 
-  // ---- SITE: trocar o vídeo em destaque (o pedido do Guilherme)
+  // ---- SITE: escolher os posts do Instagram em destaque e editar o herói
   await pg.goto(SITE + '/painel/#site', { waitUntil: 'networkidle2' });
   await dorme(1100);
-  const grupos = await pg.evaluate(() => document.querySelectorAll('.grupo').length);
-  grupos >= 4 ? ok('painel do site mostra os grupos de lacunas', grupos + ' grupos')
-              : bad('grupos', grupos);
+  const grupos = await pg.evaluate(() => [...document.querySelectorAll('.grupo')].map(g => g.dataset.grupo));
+  (grupos.length >= 4 && grupos[0] === 'instagram' && !grupos.some(g => /regina|cezinha|video/.test(g)))
+    ? ok('painel do site mostra os grupos novos, Instagram primeiro', grupos.join(', '))
+    : bad('grupos do painel', JSON.stringify(grupos));
 
-  await pg.evaluate(() => {
-    const el = document.querySelector('[data-chave="video.url"]');
-    el.value = 'https://www.instagram.com/p/VIDEONOVO123/';
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await dorme(900);
-  await pg.evaluate(() => {
-    const el = document.querySelector('[data-chave="regina.nome"]');
-    el.value = 'Regina Carnovale Nunes';
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await dorme(900);
-
-  // número da urna só aceita dígito
-  await pg.evaluate(() => {
-    const el = document.querySelector('[data-chave="regina.numero"]');
-    el.value = 'quinze mil';
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await dorme(700);
-  const revertido = await pg.$eval('[data-chave="regina.numero"]', e => e.value);
-  revertido === '' ? ok('painel recusa número de urna com letra (não quebra o simulador)')
-                   : bad('aceitou número inválido', revertido);
-
-  await pg.evaluate(() => {
-    const el = document.querySelector('[data-chave="regina.numero"]');
-    el.value = '15115';
-    el.dispatchEvent(new Event('change', { bubbles: true }));
-  });
-  await dorme(800);
+  const mudar = async (chave, valor) => {
+    await pg.evaluate((c, v) => {
+      const el = document.querySelector(`[data-chave="${c}"]`);
+      el.value = v;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }, chave, valor);
+    await dorme(900);
+  };
+  await mudar('instagram.post1', 'https://www.instagram.com/p/POSTNOVO123/');
+  // link de PERFIL no lugar de post: o painel aceita (é URL), o site descarta
+  await mudar('instagram.post2', 'https://www.instagram.com/vereadoravilma/');
+  await mudar('heroi.texto', 'Texto de abertura editado pelo painel.');
   await pg.close();
 }
 
@@ -305,21 +288,19 @@ async function entrar(pg, email, senha = 'teste1234') {
   const pg = await novaAba();
   await pg.goto(SITE + '/?anim=0', { waitUntil: 'networkidle2' });
   await dorme(2200);
+  await pg.evaluate(() => document.getElementById('instagram').scrollIntoView());
+  await dorme(1500);
   const r = await pg.evaluate(() => ({
-    linkVideo: document.querySelector('[data-vt-href="video.url"]')?.href,
-    dadosVideo: window.VT_DADOS?.video?.url,
-    nomeRegina: [...document.querySelectorAll('[data-vt="regina.nome"]')].map(e => e.textContent.trim()),
-    numeros: [...document.querySelectorAll('[data-num="regina"]')].map(e => e.textContent.trim()),
+    posts: window.VT_DADOS?.instagram?.posts?.filter(Boolean),
+    naTela: [...document.querySelectorAll('#insta-grade .instagram-media')].map(b => b.dataset.instgrmPermalink),
+    texto: document.querySelector('[data-vt="heroi.texto"]')?.textContent.trim(),
   }));
-  /VIDEONOVO123/.test(r.linkVideo || '') && /VIDEONOVO123/.test(r.dadosVideo || '')
-    ? ok('o vídeo trocado no painel aparece no site')
-    : bad('vídeo não trocou no site', JSON.stringify(r));
-  r.nomeRegina.every(n => n === 'Regina Carnovale Nunes') && r.nomeRegina.length > 0
-    ? ok('nome editado no painel aparece no site', r.nomeRegina[0])
-    : bad('nome não trocou', JSON.stringify(r.nomeRegina));
-  r.numeros.every(n => n === '15115')
-    ? ok('número 15115 consistente em todos os lugares do site', r.numeros.length + ' lugares')
-    : bad('números divergentes', JSON.stringify(r.numeros));
+  (r.posts?.length === 1 && /POSTNOVO123/.test(r.posts[0]) && r.naTela.length === 1)
+    ? ok('o post escolhido no painel aparece no site (e o link de perfil é descartado)', r.naTela[0])
+    : bad('post do painel não chegou ao site', JSON.stringify(r));
+  r.texto === 'Texto de abertura editado pelo painel.'
+    ? ok('texto do herói editado no painel aparece no site')
+    : bad('texto do herói não trocou', r.texto);
   await pg.close();
 }
 
@@ -334,10 +315,8 @@ async function entrar(pg, email, senha = 'teste1234') {
   await digitar(pg, 'input[name=whatsapp]', '12977778888');
   await digitar(pg, 'select[name=bairro]', 'Massaguaçu');
   await clique(pg, '[data-ir="2"]'); await dorme(500);
-  await clique(pg, 'input[name=ajuda][value=panfletar]');
+  await clique(pg, 'input[name=ajuda][value=bairro]');
   await clique(pg, '[data-ir="3"]'); await dorme(500);
-  await clique(pg, 'input[name=apoio][value="15115"]'); await dorme(300);
-  await clique(pg, '#aceite-sensivel input');
   await clique(pg, 'input[name=consente]');
   await clique(pg, '#form-enviar');
   await dorme(1400);
@@ -355,14 +334,14 @@ async function entrar(pg, email, senha = 'teste1234') {
   const t = await pg2.evaluate(() => ({
     linhas: document.querySelectorAll('#corpo-apoio tr').length,
     nome: document.querySelector('#corpo-apoio .td-nome')?.textContent.trim(),
-    apoio: document.querySelector('#corpo-apoio .mini--magenta')?.textContent.trim(),
+    apoio: document.querySelectorAll('#corpo-apoio .mini--magenta, #corpo-apoio .mini--azul').length,
     kpiTotal: document.querySelector('.kpi b')?.textContent.trim(),
   }));
   t.linhas === 1 && /Joana/.test(t.nome || '')
     ? ok('a Mariana vê no painel quem se cadastrou no site', t.nome)
     : bad('apoiador não chegou no painel', JSON.stringify(t));
-  t.apoio === '15115' ? ok('apoio declarado com consentimento aparece para a equipe')
-                      : bad('apoio', t.apoio);
+  t.apoio === 0 ? ok('cadastro novo chega sem declaração de apoio a candidatura')
+                : bad('apareceu declaração de apoio', t.apoio);
 
   // mudar situação
   await digitar(pg2, '[data-status]', 'contatado');

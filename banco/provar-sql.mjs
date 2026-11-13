@@ -302,7 +302,7 @@ await como(u.intruso, () => falha('conta inerte não roda promover()',
 
 /* ═══════════════════ 5b · CONTEÚDO DO SITE (o painel do social) ══════ */
 const chaves = await db.query(`select count(*)::int n from public.site_conteudo`);
-chaves.rows[0].n >= 20 ? ok('lacunas do site criadas no banco', chaves.rows[0].n + ' campos editáveis')
+chaves.rows[0].n >= 15 ? ok('lacunas do site criadas no banco', chaves.rows[0].n + ' campos editáveis')
                        : bad('poucas chaves', chaves.rows[0].n);
 
 await como(null, async () => {
@@ -316,21 +316,21 @@ await como(null, async () => {
 
 await como(u.social, async () => {
   await db.query(`update public.site_conteudo
-                  set valor='https://www.instagram.com/p/NOVOVIDEO/'
-                  where chave='video.url'`);
-  const r = await db.query(`select valor from public.site_conteudo where chave='video.url'`);
-  /NOVOVIDEO/.test(r.rows[0].valor)
-    ? ok('social media TROCA o vídeo em destaque pelo painel')
-    : bad('social não conseguiu trocar o vídeo');
+                  set valor='https://www.instagram.com/p/NOVOPOST/'
+                  where chave='instagram.post1'`);
+  const r = await db.query(`select valor from public.site_conteudo where chave='instagram.post1'`);
+  /NOVOPOST/.test(r.rows[0].valor)
+    ? ok('social media TROCA o post do Instagram em destaque pelo painel')
+    : bad('social não conseguiu trocar o post');
 
-  await db.query(`update public.site_conteudo set valor='Regina Nunes' where chave='regina.nome'`);
-  ok('social media edita nome/texto do site');
+  await db.query(`update public.site_conteudo set valor='Vereadora · MDB' where chave='heroi.olho'`);
+  ok('social media edita texto do site');
 
   await falha('social media não cria chave nova (só preenche as que o site lê)',
     () => db.query(`insert into public.site_conteudo (chave,rotulo) values ('inventada','x')`),
     'row-level|permission');
   await falha('social media não apaga chave que o site espera',
-    () => db.query(`delete from public.site_conteudo where chave='video.url'`),
+    () => db.query(`delete from public.site_conteudo where chave='instagram.post1'`),
     'row-level|permission');
 });
 
@@ -345,8 +345,8 @@ await como(null, async () => {
 
 await como(u.assessora, async () => {
   const r = await db.query(`select count(*)::int n from public.site_conteudo`);
-  r.rows[0].n >= 20 ? ok('assessora LÊ o conteúdo do site (para conferir)') : bad('assessora não leu');
-  await db.query(`update public.site_conteudo set valor='hackeado' where chave='heroi.lead'`);
+  r.rows[0].n >= 15 ? ok('assessora LÊ o conteúdo do site (para conferir)') : bad('assessora não leu');
+  await db.query(`update public.site_conteudo set valor='hackeado' where chave='heroi.texto'`);
 });
 const naoMexeu = await db.query(
   `select count(*)::int n from public.site_conteudo where valor='hackeado'`);
@@ -553,7 +553,7 @@ await como(u.admin, async () => {
   /* renomear a chave do site apagava a lacuna que o site lê */
   await como(u.social, () => falha(
     'social media não RENOMEIA chave do site (renomear = apagar + criar)',
-    () => db.query(`update public.site_conteudo set chave='video.urlx' where chave='video.url'`),
+    () => db.query(`update public.site_conteudo set chave='instagram.postx' where chave='instagram.post1'`),
     'permission denied'));
 
   /* e a prova de consentimento de outra pessoa não é editável por PATCH */

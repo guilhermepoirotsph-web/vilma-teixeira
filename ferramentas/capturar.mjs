@@ -9,7 +9,7 @@
    Uso:
      node ferramentas/capturar.mjs                      # desktop, todas as seções
      node ferramentas/capturar.mjs --largura=390 --altura=844   # celular
-     node ferramentas/capturar.mjs --secao=urna         # só uma seção
+     node ferramentas/capturar.mjs --secao=projetos     # só uma seção
      node ferramentas/capturar.mjs --url=".../?anim=0"  # sem animação
    ========================================================================== */
 import puppeteer from 'puppeteer-core';
@@ -42,8 +42,8 @@ const CHROME = [
  .find(p => { try { return require('node:fs').existsSync(p); } catch { return false; } })
   || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 
-const SECOES = ['topo', 'uniao', 'historia', 'mandato', 'video', 'regina',
-                'cezinha', 'urna', 'caragua', 'agenda', 'apoie', 'final'];
+const SECOES = ['topo', 'historia', 'projetos', 'instagram', 'fotos',
+                'caragua', 'agenda', 'apoie', 'final'];
 
 await mkdir(CAPS, { recursive: true });
 

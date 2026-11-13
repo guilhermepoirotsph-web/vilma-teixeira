@@ -235,8 +235,9 @@ antiga: <https://developers.facebook.com/tools/debug/>.
 |---|---|
 | **Chip de campanha** | Sem número de campanha, os botões de WhatsApp somem do site — de propósito. Usar o do gabinete é usar estrutura de mandato. Com o chip, preencha `campanha.whatsapp` em `assets/js/dados.js` (ou o campo "WhatsApp da campanha" no painel do Lucas) e os botões voltam sozinhos. |
 | **Foto da Vilma** | A única pública é a da Câmara: 204×250, com o brasão atrás. Peça um recorte PNG sem fundo, altura ≥ 1600px, e salve como `fotos/vilma.png`. |
-| **O MP4 do recado** | O player com som e legenda está pronto e esperando. Sem o arquivo, cai no embed do Instagram. |
-| **Advogado da campanha** | Validar o checklist eleitoral (`LEIA-ME.md`) e **reconferir no DivulgaCand** se 15115 e 2223 seguem deferidos. O site afirma que sim. |
+| **Rodar `banco/09-so-vilma.sql`** | Tira do painel as lacunas da Regina, do Cezinha e do vídeo de apoio, e cria as de Instagram e galeria. Sem ele o site novo funciona, mas o painel do Lucas continua mostrando os campos antigos. |
+| **Posts e fotos da Vilma** | Painel → Site → Instagram (até 4 links de post) e Galeria (até 6 fotos). É isso que dá ênfase às imagens dela no site. |
+| **Advogado** | Validar a página de privacidade revista em 13/11/2026 (o formulário deixou de pedir declaração de apoio e a finalidade virou "novidades do trabalho da vereadora"). |
 
 ---
 

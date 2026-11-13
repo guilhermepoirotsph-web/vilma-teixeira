@@ -6,34 +6,25 @@
 
 window.VT_DADOS = {
 
+  // O nome "campanha" ficou por compatibilidade (nucleo.js, apoie.js e o
+  // painel leem daqui). Desde 13/11/2026 o site é só da Vilma e do mandato.
   campanha: {
     dominio: 'www.vilmateixeira.com',
-    titulo: 'Vilma Teixeira — Juntos por Caraguá e pelo Brasil',
-    chamada: 'Duas lideranças que trabalham por Caraguá e pelo Brasil',
-    assinatura: 'Juntos por Caraguá e pelo Brasil',
+    titulo: 'Vilma Teixeira · Vereadora de Caraguatatuba (MDB)',
+    assinatura: 'Juntos por Caraguá',
     ano: 2026,
     // Identificação obrigatória no rodapé (vedado o anonimato — art. 57-B, Lei 9.504/97)
     responsavel: 'Vilma Teixeira de Oliveira Santos',
-    // Preenchidos pela assessoria antes de publicar:
-    cnpjCampanha: '',            // CNPJ de campanha, se houver
-    emailContato: '',            // e-mail de campanha (NÃO usar o institucional da Câmara)
+    emailContato: '',            // e-mail próprio (NÃO usar o institucional da Câmara)
 
-    // WhatsApp de CAMPANHA. Vazio de propósito: enquanto não existir um chip de
-    // campanha, os botões de WhatsApp somem do site e o contato vira formulário
-    // + Instagram. Publicar o número do GABINETE seria usar estrutura de mandato
-    // em propaganda — exatamente o que o rodapé diz que este site não faz.
+    // WhatsApp PRÓPRIO da Vilma (não o do gabinete). Vazio de propósito:
+    // sem número, os botões de WhatsApp somem do site e o contato vira
+    // formulário + Instagram. Publicar o número do GABINETE seria usar
+    // estrutura de mandato numa página pessoal — o que o rodapé diz que não faz.
     whatsapp: '',
     instagram: 'vereadoravilma',
-    // O número do gabinete NÃO mora aqui, de propósito. Este arquivo é servido
-    // ao navegador: guardar o contato do mandato aqui — mesmo sem usar — é
-    // publicá-lo no código-fonte de um site de campanha, e é o print que o
-    // adversário tira. Ele está em docs/DADOS.md §6-C, que não vai ao ar.
-
-    eleicao: {
-      turno1: '2026-10-04T08:00:00-03:00',
-      dataExtenso: 'Domingo, 4 de outubro de 2026',
-      rotulo: 'Falta para a eleição',
-    },
+    // O número do gabinete NÃO mora aqui, de propósito: este arquivo é servido
+    // ao navegador. Ele está em docs/DADOS.md §6-C, que não vai ao ar.
   },
 
   /* ---------------------------------------------------------------- VILMA */
@@ -49,9 +40,9 @@ window.VT_DADOS = {
     foto: 'fotos/vilma.png',
     retrato: 'fotos/vilma-retrato.jpg',
 
-    lead: 'Começou em 1995 como auxiliar de serviços gerais. Hoje é 1ª Secretária da ' +
-          'Mesa da Câmara, no quarto mandato como vereadora. Neste ano ela não está na ' +
-          'urna — está pedindo dois votos para levar Caraguá até São Paulo e até Brasília.',
+    lead: 'Começou em 1995 como auxiliar de serviços gerais, foi agente comunitária de ' +
+          'saúde e técnica de enfermagem. Hoje é 1ª Secretária da Mesa da Câmara, no quarto ' +
+          'mandato — e autora da lei que leva jardins terapêuticos às UBSs e à UPA de Caraguatatuba.',
 
     // Frase atribuída — vem da biografia oficial, não é afirmação nossa.
     marco: {
@@ -94,16 +85,26 @@ window.VT_DADOS = {
       ],
     },
 
-    destaque: {
-      selo: 'PL nº 15/26',
-      titulo: 'Jardins terapêuticos na saúde pública',
-      texto: 'Implantação de jardins terapêuticos nas UBSs e na UPA de Caraguatatuba — ' +
-             'humanizar o espaço de atendimento para ajudar na recuperação do paciente e ' +
-             'na saúde mental de quem é atendido e de quem atende.',
+    // O projeto dela que virou lei. Fonte: Diário Oficial do Município de
+    // Caraguatatuba nº 1844, 13/04/2026 (texto conferido em 13/11/2026).
+    lei: {
+      numero: '2.832',
+      ano: '2026',
+      sancao: '8 de abril de 2026',
+      titulo: 'Jardins terapêuticos nas UBSs e na UPA',
+      ementa: 'Institui a implantação de Jardins Terapêuticos nas Unidades Básicas de Saúde (UBS) ' +
+              'e na Unidade de Pronto Atendimento (UPA) do Município de Caraguatatuba.',
+      fonte: 'Diário Oficial do Município de Caraguatatuba, nº 1844, 13/04/2026',
+      finalidades: [
+        'proporcionar ambiente agradável, acolhedor e calmante, favorecendo o equilíbrio emocional dos usuários',
+        'contribuir com ações de humanização do atendimento em saúde',
+        'possibilitar apoio complementar a tratamentos de saúde física e mental',
+        'servir como espaço educativo (plantas medicinais, terapia ocupacional e práticas integrativas)',
+      ],
     },
 
     bandeiras: [
-      { icone: 'saude',    titulo: 'Saúde',            texto: 'A pauta de origem: UBS que funciona, acolhimento e saúde mental.' },
+      { icone: 'saude',    titulo: 'Saúde',            texto: 'A pauta de origem: UBS que funciona, acolhimento e saúde mental — agora com lei própria.' },
       { icone: 'social',   titulo: 'Social',           texto: 'Quem mais precisa entra primeiro. Da agente comunitária à cadeira da Câmara.' },
       { icone: 'mulher',   titulo: 'Mulheres',         texto: 'Representatividade e políticas para quem sustenta a casa e a cidade.' },
       { icone: 'bairro',   titulo: 'Bairros',          texto: 'Indicação e requerimento são ferramenta de bairro — 90 protocolados no mandato.' },
@@ -116,145 +117,28 @@ window.VT_DADOS = {
     // navegador de quem abrisse a página. Estão em docs/DADOS.md §6-C.
   },
 
-  /* -------------------------------------------------------------- REGINA */
-  regina: {
-    nome: 'Regina Nunes',
-    nomeCompleto: 'Regina Carnovale Nunes',
-    cargo: 'Deputada Estadual',
-    uf: 'São Paulo',
-    partido: 'MDB',
-    numero: '15115',
-    numeroFmt: ['1','5','1','1','5'],
-    registro: 'Registro deferido no TSE',
-    cor: 'magenta',
-    instagram: 'reginanunessp',
-    foto: 'fotos/regina.png',
-
-    lead: 'Primeira-dama de São Paulo, criada na periferia da capital. ' +
-          'Primeira vez que disputa uma eleição — e chega com a causa animal ' +
-          'e o trabalho social embaixo do braço.',
-
-    frase: 'Hospital ajuda, mas o que resolve é a castração. Sem isso, o problema só cresce.',
-    fraseContexto: 'sobre o abandono de animais',
-
-    bandeiras: [
-      { titulo: 'Causa animal',
-        texto: 'Castração como política pública central contra o abandono. Mantém, com recursos ' +
-               'próprios e doações, um abrigo com cerca de 40 cães e organiza feiras de adoção.' },
-      { titulo: 'Crianças com deficiência',
-        texto: 'Ações de cuidado e inclusão para crianças com deficiência e suas famílias.' },
-      { titulo: 'Mulheres em vulnerabilidade',
-        texto: 'Fortalecimento das redes de apoio a mulheres em situação de vulnerabilidade.' },
-      { titulo: 'Família e inclusão',
-        texto: 'Projetos sociais e políticas públicas voltadas ao fortalecimento da família.' },
-    ],
-
-    fatos: [
-      { n: '15115', r: 'Número na urna' },
-      { n: '1ª',    r: 'Disputa eleitoral' },
-      { n: '~40',   r: 'Cães no abrigo que mantém' },
-      { n: 'MDB',   r: 'Mesmo partido da Vilma' },
-    ],
+  /* ----------------------------------------------------------- INSTAGRAM */
+  // Os posts em destaque vêm do painel (Site → Instagram, chaves instagram.post1…4).
+  // Cada link vira o embed OFICIAL do Instagram — a imagem continua hospedada lá,
+  // a visualização conta para ela e não há cópia de conteúdo. Lista vazia = a
+  // grade não aparece (nunca entra post de mentira).
+  instagram: {
+    posts: [],
   },
 
-  /* ------------------------------------------------------------- CEZINHA */
-  cezinha: {
-    nome: 'Cezinha de Madureira',
-    nomeCompleto: 'Antonio Cezar Correia Freire',
-    cargo: 'Deputado Federal',
-    uf: 'São Paulo',
-    partido: 'PL',
-    numero: '2223',
-    numeroFmt: ['2','2','2','3'],
-    registro: 'Registro deferido no TSE',
-    cor: 'azul',
-    foto: 'fotos/cezinha.png',
-
-    lead: 'Jornalista, radialista e pastor. Deputado estadual em 2015, ' +
-          'deputado federal desde 2019 — com votação crescente a cada eleição.',
-
-    mandatos: [
-      { ano: '2014', cargo: 'Deputado Estadual', votos: 105521, partido: 'DEM' },
-      { ano: '2018', cargo: 'Deputado Federal',  votos: 119024, partido: 'PSD' },
-      { ano: '2022', cargo: 'Deputado Federal',  votos: 143434, partido: 'PSD' },
-    ],
-
-    cargos: [
-      'Presidente da Comissão de Viação e Transportes (2023–2024)',
-      'Vice-Líder do Governo (2022–2023)',
-      'Secretário de Transparência (2025)',
-      'Comissões de Comunicação, Constituição e Justiça e Relações Exteriores',
-    ],
-
-    autoria: [
-      { selo: 'PL 4188/2020', titulo: 'Liberdade religiosa',
-        texto: 'Regulamenta o livre exercício de crenças e cultos religiosos previsto na Constituição.' },
-      { selo: 'PL 2033/2022', titulo: 'Planos de saúde',
-        texto: 'Estabelece hipóteses de cobertura de exames e tratamentos que estão fora do rol da saúde suplementar.' },
-      { selo: 'PL 2352/2023', titulo: 'Radiodifusão',
-        texto: 'Regras claras para a radiodifusão. Aprovado na Comissão de Comunicação da Câmara.' },
-      { selo: 'Lei 16.269/2016 (SP)', titulo: 'Lei do Chip',
-        texto: 'Exige rigor no cadastro de compradores de chip pré-pago. De sua autoria como deputado estadual.' },
-    ],
-
-    fatos: [
-      { n: '2223',      r: 'Número na urna' },
-      { n: '143.434',   r: 'Votos em 2022' },
-      { n: '3',         r: 'Mandatos conquistados' },
-      { n: 'PL',        r: 'Partido em 2026' },
-    ],
-  },
-
-  /* --------------------------------------------------------------- VÍDEO */
-  video: {
-    url: 'https://www.instagram.com/p/Dcuqygpua5b/',
-    autor: '@vereadoravilma',
-    data: '31 de agosto de 2026',
-    legenda: 'Caraguatatuba merece uma voz forte, preparada e comprometida com as pessoas. ' +
-             'Apoio @reginanunessp para Deputada Estadual. Vamos juntos construir um futuro com ' +
-             'mais trabalho, respeito e oportunidades para nossa cidade. Vote 15115.',
-    tags: ['#ReginaNunes', '#15115', '#Caraguatatuba', '#LitoralNorte', '#SãoPaulo'],
-
-    // Arquivo próprio: quando existir, o site usa o player com SOM e legenda
-    // sincronizada em vez do embed do Instagram. Enquanto não existir, cai no embed.
-    arquivo: 'midia/recado-vilma.mp4',
-    cartaz: 'midia/recado-vilma-capa.jpg',
-
-    // Legenda sincronizada. Cada trecho: { t: segundo em que entra, txt: fala }.
-    // VAZIO de propósito — eu não tenho o áudio do vídeo. A assessoria preenche
-    // (ou manda o MP4 e a transcrição) e o site passa a legendar sozinho.
-    transcricao: [],
-  },
-
-  /* -------------------------------------------- COMPROMISSO COM CARAGUÁ */
-  // PROPOSTA de campanha, não obra entregue. O texto do site deixa isso explícito.
-  compromisso: {
-    selo: 'O compromisso com Caraguá',
-    titulo: 'Hospital veterinário público e gratuito',
-    lead: 'Quem tem bicho em casa sabe: quando adoece, ou tem dinheiro para a clínica, ' +
-          'ou não tem o que fazer. Caraguatatuba precisa de atendimento veterinário ' +
-          'público e gratuito — e de castração de verdade, que é o que resolve o abandono ' +
-          'na raiz.',
-    pilares: [
-      { titulo: 'Atendimento gratuito',
-        texto: 'Consulta, exame e cirurgia para quem não tem como pagar clínica particular.' },
-      { titulo: 'Castração como política',
-        texto: 'A bandeira central da Regina: castrar em escala é o que faz o abandono cair. ' +
-               'Hospital sozinho enxuga gelo.' },
-      { titulo: 'O modelo já existe',
-        texto: 'A cidade de São Paulo mantém uma rede de hospitais veterinários públicos ' +
-               '— o 5º está em obras. Não é ideia solta: é política que já roda numa cidade grande.' },
-    ],
-    // frase que amarra a proposta ao voto, sem prometer o que não pode
-    fecho: 'Não é favor. É política pública — e Caraguá só entra nessa conta com quem ' +
-           'defende a causa lá dentro.',
-  },
+  /* ------------------------------------------------------------- GALERIA */
+  // Fotos da Vilma: sobem pelo painel (Site → Galeria, galeria.1…6) ou entram
+  // como arquivo em fotos/ e são listadas aqui (ex.: 'fotos/galeria-1.jpg').
+  // Sem nenhuma, a seção #fotos fica escondida — e o link "Fotos" do menu também.
+  // Lista vazia por padrão: o site não sai procurando arquivo que não existe.
+  galeria: [],
+  galeriaArquivos: [],
 
   /* -------------------------------------------------- AGENDA (fallback) */
   // O site tenta ler a agenda do Supabase. Sem banco configurado, mostra estes exemplos
   // marcados como demonstração — nunca finge que é agenda real.
   agendaExemplo: [
-    { titulo: 'Caminhada no Centro',    local: 'Praça Dr. Cândido Motta — Centro', data: null, demo: true },
+    { titulo: 'Reunião de bairro',      local: 'Centro',                           data: null, demo: true },
     { titulo: 'Reunião com lideranças', local: 'Massaguaçu',                        data: null, demo: true },
     { titulo: 'Visita ao Perequê-Mirim',local: 'Perequê-Mirim',                     data: null, demo: true },
   ],

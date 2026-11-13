@@ -1,6 +1,6 @@
 <section class="secao apoie" id="apoie">
-  <div class="brilho brilho--magenta" style="width:56vw;height:56vw;left:-18vw;bottom:-20vw;opacity:.38"></div>
-  <div class="brilho brilho--royal" style="width:50vw;height:50vw;right:-16vw;top:-14vw;opacity:.42"></div>
+  <div class="brilho brilho--verde" style="width:56vw;height:56vw;left:-18vw;bottom:-20vw;opacity:.38"></div>
+  <div class="brilho brilho--ouro" style="width:44vw;height:44vw;right:-16vw;top:-14vw;opacity:.22"></div>
   <div class="grao" aria-hidden="true"></div>
 
   <div class="wrap">
@@ -8,23 +8,28 @@
 
       <!-- --------------------------------------------------- lado texto -->
       <div class="apoie__pitch">
-        <p class="olho olho--magenta revelar">Some com a gente</p>
-        <h2 class="h1 revelar">Campanha se faz<br><span class="grifo">de gente.</span></h2>
+        <p class="olho olho--magenta revelar">Fale com a Vilma</p>
+        <h2 class="h1 revelar">Caraguá se faz<br><span class="grifo">de gente.</span></h2>
         <p class="lead revelar mt-2">
-          Não precisa de palanque. Precisa de você contando pra três pessoas
-          por que Caraguá merece ser lembrada em São Paulo e em Brasília.
+          Tem uma demanda no seu bairro, uma ideia para a cidade ou quer somar
+          nas ações da Vilma? Deixe seu contato: a equipe dela fala com você.
         </p>
 
         <ul class="apoie__lista revelar">
           <li><b>1.</b> Deixe seu contato — leva menos de um minuto.</li>
-          <li><b>2.</b> A equipe te chama no WhatsApp com o material.</li>
-          <li><b>3.</b> Você espalha do seu jeito, no seu bairro.</li>
+          <li><b>2.</b> Conte como quer participar, ou o que o seu bairro precisa.</li>
+          <li><b>3.</b> A equipe da Vilma te procura.</li>
         </ul>
 
-        <div class="apoie__numeros revelar" aria-hidden="true">
-          <div class="cola cola--azul"><span>Federal</span><b class="tab-num" data-num="cezinha">2223</b><small data-vt="cezinha.nome">Cezinha de Madureira</small></div>
-          <div class="cola cola--magenta"><span>Estadual</span><b class="tab-num" data-num="regina">15115</b><small data-vt="regina.nome">Regina Nunes</small></div>
-        </div>
+        <a class="perfil perfil--mini revelar" href="https://www.instagram.com/vereadoravilma/"
+           target="_blank" rel="noopener" data-ig-link>
+          <span class="perfil__anel"><span class="perfil__foto" data-foto-vilma>
+            <span class="perfil__inicial" aria-hidden="true">V</span></span></span>
+          <span class="perfil__dados">
+            <b class="perfil__arroba" data-ig-arroba>@vereadoravilma</b>
+            <span class="perfil__bio">Prefere falar direto? Chame no Instagram.</span>
+          </span>
+        </a>
       </div>
 
       <!-- ------------------------------------------------------ o form -->
@@ -34,7 +39,7 @@
 
           <div class="form__passos" aria-hidden="true">
             <span class="form__passo on" data-p="1"><i>1</i> Você</span>
-            <span class="form__passo" data-p="2"><i>2</i> Como ajuda</span>
+            <span class="form__passo" data-p="2"><i>2</i> Participar</span>
             <span class="form__passo" data-p="3"><i>3</i> Confirmar</span>
             <span class="form__barra"><i id="form-barra"></i></span>
           </div>
@@ -54,7 +59,7 @@
               <span class="campo__rot">WhatsApp <b>*</b></span>
               <input class="campo__in" type="tel" name="whatsapp" inputmode="numeric"
                      autocomplete="tel-national" placeholder="(12) 99999-9999" required>
-              <span class="campo__dica">É por aqui que a equipe manda o material.</span>
+              <span class="campo__dica">É por aqui que a equipe fala com você.</span>
               <span class="campo__erro"></span>
             </label>
 
@@ -80,21 +85,19 @@
 
           <!-- ============================================= PASSO 2 -->
           <fieldset class="form__tela" data-tela="2">
-            <legend class="form__legenda">Como você quer somar?</legend>
+            <legend class="form__legenda">Como você quer participar?</legend>
             <p class="miudo" style="margin:-6px 0 16px">Pode marcar quantas quiser. Ou nenhuma — acompanhar já ajuda.</p>
 
             <div class="opcoes" id="opcoes-ajuda">
-              <label class="opcao"><input type="checkbox" name="ajuda" value="divulgar"><span>Divulgar nas minhas redes</span></label>
-              <label class="opcao"><input type="checkbox" name="ajuda" value="adesivo"><span>Colar adesivo no carro</span></label>
-              <label class="opcao"><input type="checkbox" name="ajuda" value="panfletar"><span>Panfletar no meu bairro</span></label>
-              <label class="opcao"><input type="checkbox" name="ajuda" value="reuniao"><span>Ceder espaço pra reunião</span></label>
-              <label class="opcao"><input type="checkbox" name="ajuda" value="levar"><span>Levar amigos pra votar</span></label>
-              <label class="opcao"><input type="checkbox" name="ajuda" value="evento"><span>Ajudar em evento/comício</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="bairro"><span>Levar uma demanda do meu bairro</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="divulgar"><span>Divulgar o trabalho nas minhas redes</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="reuniao"><span>Ceder espaço pra reunião no bairro</span></label>
+              <label class="opcao"><input type="checkbox" name="ajuda" value="evento"><span>Ajudar em ações e eventos</span></label>
               <label class="opcao"><input type="checkbox" name="ajuda" value="acompanhar"><span>Só quero acompanhar</span></label>
             </div>
 
             <label class="campo mt-3">
-              <span class="campo__rot">Quer deixar um recado pra Vilma? <em>(opcional)</em></span>
+              <span class="campo__rot">Recado ou demanda para a Vilma <em>(opcional)</em></span>
               <textarea class="campo__in" name="recado" rows="3" maxlength="600"
                         placeholder="Um problema do bairro, uma ideia, um obrigado…"></textarea>
             </label>
@@ -107,44 +110,15 @@
 
           <!-- ============================================= PASSO 3 -->
           <fieldset class="form__tela" data-tela="3">
-            <legend class="form__legenda">Fechar com chave de ouro</legend>
-
-            <div class="compromisso">
-              <p class="compromisso__rot">
-                Quer declarar seu apoio aos números? <em>(totalmente opcional)</em>
-              </p>
-              <div class="compromisso__itens">
-                <label class="voto-op voto-op--azul">
-                  <input type="checkbox" name="apoio" value="2223">
-                  <span class="voto-op__num tab-num" data-num="cezinha">2223</span>
-                  <span class="voto-op__txt"><b>Cezinha de Madureira</b>Deputado Federal</span>
-                </label>
-                <label class="voto-op voto-op--magenta">
-                  <input type="checkbox" name="apoio" value="15115">
-                  <span class="voto-op__num tab-num" data-num="regina">15115</span>
-                  <span class="voto-op__txt"><b>Regina Nunes</b>Deputada Estadual</span>
-                </label>
-              </div>
-
-              <!-- consentimento ESPECÍFICO e DESTACADO para dado sensível (LGPD art. 11, I) -->
-              <label class="aceite aceite--destaque" id="aceite-sensivel" hidden>
-                <input type="checkbox" name="consente_apoio">
-                <span>
-                  <b>Consentimento específico:</b> autorizo a campanha a registrar a declaração
-                  de apoio que marquei acima. Entendo que <b>posicionamento político é dado
-                  pessoal sensível</b> e que posso revogar essa autorização quando quiser,
-                  <a href="privacidade.html#descadastrar" target="_blank" rel="noopener"
-                     class="link-t">nesta página</a>, sem precisar falar com ninguém.
-                </span>
-              </label>
-            </div>
+            <legend class="form__legenda">Falta só a sua autorização</legend>
 
             <label class="aceite">
               <input type="checkbox" name="consente" required>
               <span>
-                Autorizo a campanha de <b>Vilma Teixeira</b> a guardar meu nome, WhatsApp,
-                bairro, e-mail, como eu quero ajudar e o recado que eu escrever, para
-                <b>entrar em contato e organizar a campanha</b>.
+                Autorizo a equipe da vereadora <b>Vilma Teixeira</b> a guardar meu nome,
+                WhatsApp, bairro, e-mail, como eu quero participar e o recado que eu
+                escrever, para <b>entrar em contato comigo e enviar novidades do trabalho
+                dela</b>.
                 Posso <a href="privacidade.html#descadastrar" target="_blank" rel="noopener"
                 class="link-t">parar o contato ou pedir a exclusão</a> a qualquer momento.
                 <a href="privacidade.html" target="_blank" rel="noopener" class="link-t">Ver política de privacidade</a>.
@@ -162,7 +136,7 @@
             <div class="form__acoes">
               <button type="button" class="btn btn--vazado" data-ir="2">Voltar</button>
               <button type="submit" class="btn btn--g btn--ouro" id="form-enviar">
-                <span>Quero somar</span>
+                <span>Enviar</span>
               </button>
             </div>
 
@@ -180,7 +154,7 @@
             </div>
             <h3 class="h2">Você está dentro!</h3>
             <p class="lead mt-1" id="form-ok-msg">
-              Obrigada por somar com a gente. A equipe da Vilma vai te chamar no WhatsApp.
+              Obrigada! A equipe da Vilma vai falar com você.
             </p>
             <div class="btn-linha btn-linha--centro mt-3">
               <a class="btn btn--zap" id="form-ok-wa" href="#" target="_blank" rel="noopener">Falar agora no WhatsApp</a>

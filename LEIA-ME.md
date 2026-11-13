@@ -1,34 +1,49 @@
-# Vilma Teixeira — site de campanha + 2 painéis
+# Vilma Teixeira — site da vereadora + 2 painéis
 
-Site institucional e de campanha da **Vereadora Vilma Teixeira (MDB, Caraguatatuba)**,
-com ênfase nas candidaturas de **Regina Nunes — 15115** (Deputada Estadual) e
-**Cezinha de Madureira — 2223** (Deputado Federal).
+Site da **Vereadora Vilma Teixeira (MDB, Caraguatatuba)** — só dela, do mandato e
+dos projetos, nas **cores do MDB**.
 
-Domínio de destino: **www.vilmateixeira.com** (registrado na Locaweb em 07/09/2026, vence 07/09/2027).
+Domínio: **www.vilmateixeira.com** (registrado na Locaweb em 07/09/2026, vence 07/09/2027).
 
 ---
 
-## O que está pronto
+## 13/11/2026 — o site virou só da Vilma
 
-| Peça | Situação |
+Pedido: *"promover somente a vereadora e seus projetos, cores do MDB, tirar os
+outros candidatos e dar ênfase nela, nas imagens e no Instagram"*. A eleição de
+4/10/2026 já tinha passado; o site ainda era da campanha de Regina Nunes (15115) e
+Cezinha de Madureira (2223).
+
+| O que mudou | Como ficou |
 |---|---|
-| Site público, 12 seções imersivas | ✅ pronto, provado |
-| Simulador de urna eletrônica | ✅ pronto, provado |
-| Contagem regressiva para 4 de outubro | ✅ pronta |
-| Recado da Vilma com **som e legenda** | ✅ player pronto — ⛔ falta o MP4 |
-| Bloco do **hospital veterinário** (proposta) | ✅ pronto — ⚠️ ver ressalva abaixo |
-| Formulário de apoio (controle de possíveis votos) | ✅ pronto, provado, LGPD ok |
-| Painel da **Mariana** — agenda **pública + interna** | ✅ pronto, provado |
-| Painel do **social media** (conteúdo + alimentar o site) | ✅ pronto, provado |
-| Banco (schema, RLS, RPC) | ✅ escrito e provado em PGlite |
-| Política de privacidade | ✅ pronta |
-| Foto da **Regina** | ✅ no ar (foto de campanha do TSE) |
-| Foto do **Cezinha** | ⚠️ provisória (retrato da Câmara) |
-| Foto da **Vilma** | ⛔ **não existe uma que sirva** — ver abaixo |
-| Supabase real criado | ⛔ **falta você** (5 min) |
-| DNS do domínio | ⛔ **falta você** |
+| Regina, Cezinha, simulador de urna, contagem regressiva, "Vilma apoia", reel de apoio e hospital veterinário (proposta da Regina) | **Saíram.** Partes, JS, CSS e fotos apagados; prova automática garante que nenhum nome/número volta (`provar.mjs`). |
+| Cores | **Paleta do MDB medida no logotipo do partido**: verde `#069233`, amarelo `#FFCD00`, chama `#E30016`, laranja e lima da faixa, preto. Tokens em `assets/css/base.css`; `auditar-cor.mjs` recusa azul/rosa/roxo. |
+| Projetos | Bloco novo **Lei nº 2.832/2026** (jardins terapêuticos nas UBSs e na UPA), de autoria dela, com as finalidades do art. 2º e a fonte (Diário Oficial nº 1844, 13/04/2026). Os 141 e as bandeiras continuam. |
+| Instagram | Seção própria: cartão de perfil com a foto dela no anel de stories nas cores do MDB, @ gigante e até **4 posts escolhidos no painel** (embed oficial). Botões de Instagram no herói, menu, agenda, formulário, fecho e rodapé. |
+| Imagens dela | Foto da Vilma resolvida uma vez (`VT.fotoDaVilma`) e usada no herói, no avatar do Instagram e no formulário. **Galeria** nova com até 6 fotos (painel). Sem foto, cada lugar cai num layout sem foto — nunca buraco. |
+| Formulário | Vira **"Fale com a Vilma"**: não pede mais declaração de apoio (dado sensível fora), opções de participação novas, consentimento reescrito. |
+| Banco | `banco/09-so-vilma.sql` tira as lacunas regina/cezinha/vídeo e cria `instagram.post1…4`, `galeria.1…6`, `heroi.texto`. **Precisa ser rodado no SQL Editor** (ver LANCAR.md). |
+| Privacidade, card de compartilhamento (og.jpg), favicon, painel | Revistos para o site só da Vilma, nas cores do MDB. |
 
-**Nada foi publicado. Nada foi commitado. Nenhuma senha foi digitada por mim.**
+### ⚠️ O que eu não consegui fazer sozinho: as fotos dela
+
+O Instagram bloqueia acesso automático (e baixar e re-hospedar foto de lá esbarra
+nos termos da plataforma — a mesma decisão do vídeo, lá atrás). Então as imagens
+entram por um destes caminhos, e o site se arruma sozinho:
+
+1. **Painel → Site** — `Foto da Vilma no herói`, `Galeria` (6 fotos) e
+   `Instagram` (4 links de post). É o caminho normal.
+2. **Arquivo** — `fotos/vilma.png` (recorte sem fundo) ou `fotos/vilma-retrato.jpg`;
+   galeria em `fotos/` listada em `assets/js/dados.js → galeriaArquivos`.
+
+Depois de pôr a foto, rode `npm run og` para o card do WhatsApp usar a foto dela.
+
+---
+
+## Histórico — como o site era na campanha (até 13/11/2026)
+
+> Tudo daqui para baixo descreve a versão de campanha. Fica como registro das
+> decisões; onde fala de Regina, Cezinha, urna ou vídeo, **não vale mais**.
 
 ### 🚨 O MAIS IMPORTANTE: o WhatsApp saiu do site, e foi de propósito
 
