@@ -628,3 +628,76 @@ select.campo__in{appearance:none;cursor:pointer;
 
 /* =============================================== confetes do formulário */
 .confete{position:fixed;top:-14px;width:9px;height:15px;z-index:950;pointer-events:none;border-radius:2px}
+
+/* ================================================ O CELULAR COM O INSTAGRAM ==
+   Moldura de celular com o embed OFICIAL do perfil dela (instagram.com/<user>/
+   embed): foto de perfil, seguidores e os posts mais recentes, ao vivo.
+   O embed tem altura previsível — cabeçalho de ~146px + duas fileiras de
+   quadrados (2/3 da largura) — e a tela usa container query para acertar a
+   altura do iframe em qualquer largura, sem barra de rolagem nem faixa branca. */
+.celular{
+  --cel-w:320px;
+  position:relative;width:min(100%,var(--cel-w));padding:11px;border-radius:46px;
+  background:linear-gradient(155deg,#2a2a2a,#0a0a0a 45%,#141414);
+  box-shadow:0 46px 90px -30px #000,0 0 0 1.5px rgba(255,255,255,.1),
+             inset 0 0 0 2px rgba(255,255,255,.06),0 0 80px -20px rgba(255,205,0,.35);
+}
+/* a ilha do celular */
+.celular::before{content:'';position:absolute;top:19px;left:50%;transform:translateX(-50%);z-index:4;
+  width:86px;height:22px;border-radius:14px;background:#050505}
+.celular__tela{position:relative;container-type:inline-size;display:grid;border-radius:36px;overflow:hidden;
+  background:#fff;padding-top:34px}
+.celular__feed{display:block;width:100%;height:calc(146px + 66.7cqw);border:0;background:#fff;
+  opacity:0;transition:opacity .6s ease}
+.celular.carregado .celular__feed{opacity:1}
+.celular__espera{position:absolute;left:0;right:0;top:34px;height:calc(146px + 66.7cqw);z-index:0;
+  display:grid;place-content:center;justify-items:center;gap:12px;padding:20px;text-align:center;
+  font-size:.82rem;font-weight:700;color:var(--tinta-media);
+  background:linear-gradient(160deg,#fff,#eef5ea)}
+.celular.carregado .celular__espera{visibility:hidden}
+.celular__feed{position:relative;z-index:1}
+.celular__seguir{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:.4em;
+  margin:4px 12px 14px;min-height:46px;border-radius:14px;font-weight:800;font-size:.9rem;
+  background:var(--mdb-amarelo);color:var(--mdb-preto);transition:box-shadow .3s,transform .3s}
+.celular__seguir:hover{box-shadow:var(--brilho-ouro);transform:translateY(-1px)}
+.celular__selo{position:absolute;z-index:5;top:-15px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:8px;padding:.5em 1em;border-radius:99px;
+  font-size:.66rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--mdb-preto);color:#fff;box-shadow:0 10px 26px -10px #000,inset 0 0 0 1px rgba(255,255,255,.14)}
+.celular__selo i{width:8px;height:8px;border-radius:50%;background:var(--mdb-vermelho);
+  box-shadow:0 0 0 0 rgba(227,0,22,.7);animation:pulsa 1.8s ease-out infinite}
+@keyframes pulsa{0%{box-shadow:0 0 0 0 rgba(227,0,22,.7)}80%,100%{box-shadow:0 0 0 9px rgba(227,0,22,0)}}
+
+/* no herói: o celular ocupa o lado direito, sobre o arco da faixa do MDB */
+.heroi__figura--feed{max-width:400px}
+.heroi__figura--feed .heroi__arco{top:auto;bottom:-6%;width:128%}
+.heroi__figura--feed .heroi__aura{top:20%}
+.heroi__celular{--cel-w:322px;transform:rotate(3deg);margin-bottom:-6px}
+/* com o celular à direita, as placas vão para baixo do texto, à esquerda */
+@media(min-width:1000px){
+  .heroi--feed .heroi__placas{justify-content:flex-start;right:auto;max-width:min(62vw,820px)}
+  .heroi--feed .heroi__rolar{display:none}
+}
+/* notebook baixo (1366×768): placas compactas e mais respiro embaixo do texto */
+@media(min-width:1000px) and (max-height:860px){
+  .heroi--feed{padding-bottom:clamp(150px,21vh,190px)}
+  .heroi--feed .placa{padding:8px 16px 10px 20px;min-width:180px}
+  .heroi--feed .placa__num{font-size:2rem}
+}
+/* celular e tablet: o feed também entra no herói, logo abaixo dos botões —
+   as fotos dela já na primeira rolada */
+@media(max-width:999px){
+  .heroi--feed .heroi__figura{display:grid;place-items:center;justify-self:center;margin-top:30px;max-width:none}
+  .heroi--feed .heroi__celular{--cel-w:300px;transform:none}
+  .heroi--feed .heroi__arco{width:118%;bottom:auto;top:12%}
+}
+@media(max-height:860px) and (min-width:1000px){.heroi__celular{--cel-w:262px}}
+@media(max-height:700px) and (min-width:1000px){.heroi__celular{--cel-w:226px}}
+
+/* na seção do Instagram: celular OU cartão de perfil, nunca os dois.
+   Se o herói já mostra o feed (html.feed-no-heroi), aqui entra o cartão. */
+.insta__lado{position:relative;display:grid;justify-items:center;gap:24px}
+.insta__celular{--cel-w:340px}
+.insta .perfil{display:none}
+html.feed-no-heroi .insta__celular{display:none}
+html.feed-no-heroi .insta .perfil{display:grid;justify-self:stretch}

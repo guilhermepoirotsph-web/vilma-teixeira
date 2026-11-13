@@ -38,8 +38,9 @@
       </p>
     </div>
 
-    <!-- A foto é o centro do herói. Escada: recorte PNG → retrato comum → pôster.
-         Quem decide é VT.escadaDeFoto (nucleo.js); nunca fica buraco na tela. -->
+    <!-- O lado direito mostra a Vilma. Escada: foto recorte (PNG) → retrato
+         comum → o Instagram dela AO VIVO num celular (embed oficial) → pôster.
+         Quem decide é heroi.js com VT.fotoDaVilma(); nunca fica buraco na tela. -->
     <div class="heroi__figura" id="heroi-figura">
       <div class="heroi__aura" aria-hidden="true"></div>
       <div class="heroi__arco" aria-hidden="true"></div>
@@ -52,6 +53,20 @@
           <b class="retrato__nome">Vilma Teixeira</b>
         </figcaption>
       </figure>
+      <div class="celular heroi__celular" data-celular hidden>
+        <span class="celular__selo" aria-hidden="true"><i></i>Ao vivo do Instagram</span>
+        <div class="celular__tela">
+          <div class="celular__espera" aria-hidden="true"><span class="spin"></span>Carregando o Instagram da Vilma…</div>
+          <!-- embed OFICIAL do perfil: as fotos vêm do Instagram, no navegador de
+               quem visita. Nada é copiado nem hospedado aqui; atualiza sozinho a
+               cada post. O src entra por JS (VT.ligarCelular), só quando aparece. -->
+          <iframe class="celular__feed" title="Instagram da Vereadora Vilma Teixeira (@vereadoravilma)"
+                  scrolling="no" referrerpolicy="strict-origin-when-cross-origin"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+          <a class="celular__seguir" href="https://www.instagram.com/vereadoravilma/" target="_blank"
+             rel="noopener" data-ig-link>Seguir <span data-ig-arroba>@vereadoravilma</span></a>
+        </div>
+      </div>
     </div>
 
   </div>

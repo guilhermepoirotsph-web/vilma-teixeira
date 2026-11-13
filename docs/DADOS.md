@@ -182,13 +182,14 @@ Tipografia (mantida): **Anton** (números) · **Archivo** (títulos) · **Great 
 
 | Onde entra | De onde vem | Situação em 13/11/2026 |
 |---|---|---|
-| Herói, avatar do Instagram, formulário | Painel (`heroi.foto`) → `fotos/vilma.png` (recorte) → `fotos/vilma-retrato.jpg` | ⛔ nenhuma ainda — o site usa o layout sem foto |
+| Herói, avatar do Instagram, formulário | Painel (`heroi.foto`) → `fotos/vilma.png` (recorte) → `fotos/vilma-retrato.jpg` → **feed ao vivo do Instagram** | ✅ sem foto subida, o herói mostra o feed dela (embed oficial do perfil) |
+| Feed do Instagram (herói ou seção) | embed oficial `instagram.com/vereadoravilma/embed` | ✅ no ar: perfil + 6 posts recentes, servidos pelo Instagram (conferido em 13/11/2026: 206 posts, 1.699 seguidores) |
 | Galeria "Vilma em Caraguá" | Painel (`galeria.1…6`) ou `fotos/` + `dados.js → galeriaArquivos` | ⛔ vazia — a seção fica escondida |
 | Posts do Instagram | Painel (`instagram.post1…4`) → embed oficial | ⛔ nenhum escolhido — fica só o cartão de perfil |
 
-**Por que não puxei do Instagram:** o Instagram bloqueia acesso automático, e baixar e
-re-hospedar foto de lá esbarra nos termos da plataforma (mesma decisão tomada para o vídeo).
-Post do Instagram entra pelo **embed oficial**; foto avulsa entra **subida pela equipe**.
+**Por que não baixei foto do Instagram:** baixar e re-hospedar esbarra nos termos da
+plataforma (mesma decisão tomada para o vídeo). O perfil e os posts entram pelo **embed
+oficial** (o Instagram serve as imagens); foto avulsa entra **subida pela equipe**.
 A foto do site da Câmara continua vetada: pequena e com o **brasão do município** atrás.
 
 As fotos da Regina e do Cezinha foram **apagadas** do repositório.

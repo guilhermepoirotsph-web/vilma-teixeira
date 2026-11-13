@@ -22,6 +22,25 @@
         </div>
       </div>
 
+      <!-- O Instagram dela ao vivo, num celular. Fica escondido quando o herói
+           já mostra o mesmo celular (html.feed-no-heroi): aí entra o cartão de
+           perfil abaixo, para a página não repetir a vitrine. -->
+      <div class="insta__lado">
+      <div class="celular insta__celular" data-celular>
+        <span class="celular__selo" aria-hidden="true"><i></i>Ao vivo do Instagram</span>
+        <div class="celular__tela">
+          <div class="celular__espera" aria-hidden="true"><span class="spin"></span>Carregando o Instagram da Vilma…</div>
+          <!-- embed OFICIAL do perfil: as fotos vêm do Instagram, no navegador de
+               quem visita. Nada é copiado nem hospedado aqui; atualiza sozinho a
+               cada post. O src entra por JS (VT.ligarCelular), só quando aparece. -->
+          <iframe class="celular__feed" title="Instagram da Vereadora Vilma Teixeira (@vereadoravilma)"
+                  scrolling="no" referrerpolicy="strict-origin-when-cross-origin"
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>
+          <a class="celular__seguir" href="https://www.instagram.com/vereadoravilma/" target="_blank"
+             rel="noopener" data-ig-link>Seguir <span data-ig-arroba>@vereadoravilma</span></a>
+        </div>
+      </div>
+
       <!-- cartão de perfil: a foto dela no anel de stories, nas cores do MDB -->
       <a class="perfil revelar" href="https://www.instagram.com/vereadoravilma/" target="_blank"
          rel="noopener" data-ig-link aria-label="Abrir o Instagram da Vereadora Vilma Teixeira">
@@ -37,6 +56,7 @@
         </span>
         <span class="perfil__seguir">Seguir</span>
       </a>
+      </div>
     </div>
 
     <!-- Posts escolhidos pela equipe no painel (Site → Instagram). Cada link vira

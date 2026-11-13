@@ -10,12 +10,14 @@ VT.secao('heroi', () => {
   const heroi = document.querySelector('.heroi');
   if (!heroi) return;
 
-  /* --------------------------------------------------- foto ou pôster */
-  // O herói NASCE em layout de pôster (heroi--sem-foto, no HTML): sem JS ou
-  // sem foto, ele já está certo. Achou foto, abre a coluna da direita.
+  /* ------------------------------------- foto, Instagram ao vivo ou pôster */
+  // O herói NASCE em layout de pôster (heroi--sem-foto, no HTML): sem JS ele
+  // já está certo. Com foto, a coluna da direita é a foto. Sem foto, é o
+  // celular com o Instagram dela ao vivo — as imagens dela na primeira tela.
   const figura = document.getElementById('heroi-figura');
   const recorte = figura?.querySelector('.foto-recorte');
   const retrato = figura?.querySelector('.retrato');
+  const celular = figura?.querySelector('[data-celular]');
   VT.fotoDaVilma().then(f => {
     if (f.recorte && recorte) {
       recorte.src = f.recorte;
@@ -24,6 +26,17 @@ VT.secao('heroi', () => {
       retrato.querySelector('img').src = f.retrato;
       retrato.hidden = false;
       figura.classList.add('heroi__figura--retrato');
+    } else if (celular) {
+      celular.hidden = false;
+      celular.dataset.pedido = '1';
+      figura.classList.add('heroi__figura--feed');
+      heroi.classList.add('heroi--feed');
+      // a seção do Instagram lê isto para não repetir o mesmo celular
+      document.documentElement.classList.add('feed-no-heroi');
+      // o embed entra DEPOIS da abertura e no ócio: não disputa a primeira pintura
+      const ligar = () => VT.ligarCelular(celular);
+      VT.aoPronto(() => ('requestIdleCallback' in window)
+        ? requestIdleCallback(ligar, { timeout: 2500 }) : setTimeout(ligar, 900));
     } else return;
     heroi.classList.remove('heroi--sem-foto');
     VT.refresh();

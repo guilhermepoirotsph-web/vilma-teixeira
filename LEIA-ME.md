@@ -25,18 +25,26 @@ Cezinha de Madureira (2223).
 | Banco | `banco/09-so-vilma.sql` tira as lacunas regina/cezinha/vídeo e cria `instagram.post1…4`, `galeria.1…6`, `heroi.texto`. **Precisa ser rodado no SQL Editor** (ver LANCAR.md). |
 | Privacidade, card de compartilhamento (og.jpg), favicon, painel | Revistos para o site só da Vilma, nas cores do MDB. |
 
-### ⚠️ O que eu não consegui fazer sozinho: as fotos dela
+### As imagens dela: o Instagram ao vivo, num celular, já na primeira tela
 
-O Instagram bloqueia acesso automático (e baixar e re-hospedar foto de lá esbarra
-nos termos da plataforma — a mesma decisão do vídeo, lá atrás). Então as imagens
-entram por um destes caminhos, e o site se arruma sozinho:
+Pedido seguinte: *"coloque imagens dela no site!"*. Baixar e re-hospedar foto do
+Instagram esbarra nos termos da plataforma (e o Instagram bloqueia acesso
+automático) — a mesma decisão do vídeo, lá atrás. A saída é o **embed oficial do
+perfil** (`instagram.com/vereadoravilma/embed`): foto de perfil, seguidores e os
+posts mais recentes dela, servidos **pelo próprio Instagram** no navegador de quem
+visita, dentro de uma moldura de celular. Atualiza sozinho a cada post.
 
-1. **Painel → Site** — `Foto da Vilma no herói`, `Galeria` (6 fotos) e
-   `Instagram` (4 links de post). É o caminho normal.
-2. **Arquivo** — `fotos/vilma.png` (recorte sem fundo) ou `fotos/vilma-retrato.jpg`;
-   galeria em `fotos/` listada em `assets/js/dados.js → galeriaArquivos`.
+- **Herói** (computador e celular): sem foto subida, o lado direito é o celular
+  com o feed dela ao vivo. Com foto subida, a foto tem prioridade.
+- **Seção Instagram**: mostra o cartão de perfil quando o herói já tem o feed, e o
+  celular quando o herói mostra foto — a página nunca repete a mesma vitrine.
+- O iframe roda em `sandbox` (não navega a página), entra só depois da abertura e
+  só quando está visível. A privacidade avisa dos cookies da Meta.
+- O retrato do site da Câmara continua **fora**: 204×250 e com o brasão atrás.
 
-Depois de pôr a foto, rode `npm run og` para o card do WhatsApp usar a foto dela.
+Outras imagens entram pelo painel (Site → Abertura / Galeria / Instagram) ou por
+arquivo em `fotos/` (ver `fotos/LEIA-ME.md`). Depois de pôr a foto dela, rode
+`npm run og` para o card do WhatsApp usar a foto.
 
 ---
 

@@ -52,13 +52,13 @@ do formulário e dos painéis.
 
 ## Provas
 
-Nada é dado como pronto sem prova que roda. **399 no total**, e elas rodam
+Nada é dado como pronto sem prova que roda. **402 no total**, e elas rodam
 sozinhas na Action antes de qualquer publicação:
 
 | Bateria | Quantas | O que garante |
 |---|---|---|
 | `npm run provar:banco` | 212 | RLS, papéis, consentimento LGPD, anti-takeover, opt-out, isolamento do robô do n8n — em Postgres real (PGlite) |
-| `npm run provar:site` | 43 | só a Vilma (nenhum outro político), paleta MDB, lei, Instagram, galeria, formulário, agenda, herói, scroll, WhatsApp do gabinete nunca vaza |
+| `npm run provar:site` | 46 | só a Vilma (nenhum outro político), paleta MDB, lei, Instagram ao vivo no herói, galeria, formulário, agenda, herói, scroll, WhatsApp do gabinete nunca vaza |
 | `npm run provar:painel` | 36 | os dois painéis com login de verdade; cada papel só baixa o que pode ver |
 | `npm run provar:publicacao` | 47 | o pacote leva o certo; a rede contra segredo e a varredura de contato do gabinete são testadas com dado plantado; e a virada de domínio roda inteira, conferindo que o sitemap não anuncia página com noindex |
 | `npm run provar:n8n` | 61 | os fluxos colam no canvas, e nenhum manda mensagem para eleitor |

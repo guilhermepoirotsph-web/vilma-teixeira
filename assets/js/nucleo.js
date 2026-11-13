@@ -201,6 +201,24 @@
       });
     },
 
+    /**
+     * Liga um celular [data-celular]: põe no iframe o embed OFICIAL do perfil
+     * do Instagram (instagram.com/<usuario>/embed). As fotos dela vêm do
+     * Instagram, no navegador de quem visita — nada é baixado nem copiado — e
+     * a vitrine se atualiza sozinha a cada post. Só liga celular VISÍVEL:
+     * iframe escondido seria Instagram carregando (e cookie da Meta) à toa.
+     */
+    ligarCelular(el) {
+      if (!el || el.dataset.ligado || !el.offsetParent) return;
+      const ig = (window.VT_DADOS?.campanha?.instagram || 'vereadoravilma').replace(/^@/, '').trim();
+      if (!/^[\w.]{1,30}$/.test(ig)) return;
+      const f = el.querySelector('iframe');
+      if (!f) return;
+      el.dataset.ligado = '1';
+      f.addEventListener('load', () => el.classList.add('carregado'), { once: true });
+      f.src = 'https://www.instagram.com/' + ig + '/embed';
+    },
+
     /** Roda fn quando o elemento aparece (para carregar coisa pesada tarde). */
     quandoVisivel(el, fn, margem = '250px') {
       if (!el) return;
@@ -379,6 +397,13 @@
     setTimeout(vigiar, 4000);
   }
 
-  // recalcula em mudança de tamanho
-  let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => VT.refresh(), 220); });
+  // recalcula em mudança de tamanho — e liga celular que passou a aparecer
+  // (girar o tablet troca qual dos dois celulares fica visível)
+  let t; addEventListener('resize', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      VT.refresh();
+      document.querySelectorAll('[data-celular][data-pedido]').forEach(VT.ligarCelular);
+    }, 220);
+  });
 })();

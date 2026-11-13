@@ -46,7 +46,11 @@ const EH_SUPABASE = /supabase\.(co|in)\//;
 const pedidosBloqueados = [];
 const respostasSupabase = [];   // tem que ficar vazio: nada pode CHEGAR ao banco
 await pg.setRequestInterception(true);
+// o Instagram também é cortado: a prova confere QUE o site pede o embed
+// oficial certo, sem depender do Instagram estar no ar (nem gerar visita lá)
+const EH_INSTAGRAM = /^https:\/\/(www\.)?instagram\.com\//;
 pg.on('request', r => {
+  if (EH_INSTAGRAM.test(r.url())) return r.abort();
   if (/config\.local\.js$/.test(r.url()) || EH_SUPABASE.test(r.url())) {
     pedidosBloqueados.push(r.url());
     r.abort();
@@ -84,6 +88,11 @@ const irPara = async id => {
 
 /* ═══════════════ 0 · O HERÓI APARECE (nada preso em opacity 0) ══════ */
 {
+  /* Espera a abertura TERMINAR antes de medir: o que esta prova caça é
+     elemento PRESO invisível, não elemento ainda entrando. Medir num relógio
+     fixo dava falso vermelho quando a máquina estava ocupada (WebGL + embed). */
+  await pg.waitForFunction(() => !window.VT?.debug?.heroi || window.VT.debug.heroi.progress() === 1,
+    { timeout: 10000 }).catch(() => {});
   const invisiveis = await pg.evaluate(() => {
     const alvos = ['.heroi__olho', '.heroi__assina', '.heroi__sobrenome', '.heroi__lead',
                    '.heroi__acoes .btn', '.placa', '.heroi__marca-mesa'];
@@ -219,6 +228,25 @@ const irPara = async id => {
 
 /* ════════════════════════════════════════════ 1-B · INSTAGRAM E FOTOS ══ */
 {
+  /* Sem foto subida, as imagens dela entram pelo embed OFICIAL do perfil do
+     Instagram num celular no herói: ninguém copia foto, o Instagram serve. */
+  await pg.evaluate(() => scrollTo(0, 0));
+  await pg.waitForFunction(() =>
+    document.querySelector('.heroi__celular iframe')?.getAttribute('src'), { timeout: 12000 }).catch(() => {});
+  const feed = await pg.evaluate(() => {
+    const cel = document.querySelector('.heroi__celular');
+    const f = cel?.querySelector('iframe');
+    return { visivel: Boolean(cel && cel.offsetParent), src: f?.getAttribute('src'),
+             sandbox: f?.getAttribute('sandbox') || '', titulo: f?.title || '',
+             classe: document.documentElement.classList.contains('feed-no-heroi') };
+  });
+  (feed.visivel && feed.src === 'https://www.instagram.com/vereadoravilma/embed' && feed.classe)
+    ? ok('sem foto subida, o herói mostra o Instagram dela ao vivo (embed oficial do perfil)', feed.src)
+    : bad('herói sem o Instagram dela', JSON.stringify(feed));
+  (/allow-scripts/.test(feed.sandbox) && !/allow-top-navigation/.test(feed.sandbox) && /Vilma/.test(feed.titulo))
+    ? ok('o embed roda em sandbox (não navega a página) e tem título para leitor de tela')
+    : bad('iframe do Instagram sem sandbox/título', JSON.stringify(feed));
+
   await irPara('instagram');
   await new Promise(r => setTimeout(r, 900));
   const ig = await pg.evaluate(() => ({
@@ -231,6 +259,13 @@ const irPara = async id => {
     ? ok('todo botão de Instagram leva ao @vereadoravilma', ig.links.length + ' links')
     : bad('link de Instagram errado', JSON.stringify(ig.links));
   ig.perfil ? ok('cartão de perfil do Instagram na seção') : bad('sem cartão de perfil');
+  const repete = await pg.evaluate(() => ({
+    celularSecao: Boolean(document.querySelector('.insta__celular')?.offsetParent),
+    perfilVisivel: Boolean(document.querySelector('#instagram .perfil')?.offsetParent),
+  }));
+  (!repete.celularSecao && repete.perfilVisivel)
+    ? ok('a seção do Instagram não repete o feed que o herói já mostra (entra o cartão)')
+    : bad('feed do Instagram repetido ou cartão sumido', JSON.stringify(repete));
   (ig.gradeEscondida && ig.posts === 0)
     ? ok('sem post escolhido no painel, nenhum post aparece (nada inventado)')
     : bad('grade de posts apareceu sem post escolhido', JSON.stringify(ig));

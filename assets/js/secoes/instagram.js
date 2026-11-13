@@ -17,6 +17,14 @@ VT.secao('instagram', () => {
 
   VT.pintarAvatares();
 
+  // o celular desta seção só aparece quando o herói mostra FOTO em vez do
+  // feed (CSS decide pela classe html.feed-no-heroi; aqui só liga se visível)
+  const celular = secao.querySelector('[data-celular]');
+  if (celular) {
+    celular.dataset.pedido = '1';
+    VT.quandoVisivel(secao, () => VT.fotoDaVilma().then(() => VT.ligarCelular(celular)), '500px');
+  }
+
   if (VT.animando && g) {
     g.fromTo('.perfil__anel', { rotate: -90, scale: .7 }, {
       rotate: 0, scale: 1, duration: 1.1, ease: 'back.out(1.6)',
