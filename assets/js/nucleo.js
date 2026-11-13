@@ -191,7 +191,9 @@
         document.querySelectorAll('.perfil__foto').forEach(el => {
           if (el.querySelector('img')) return;
           const img = new Image();
+          // decorativa: o nome dela está escrito ao lado, no próprio cartão
           img.alt = '';
+          img.setAttribute('aria-hidden', 'true');
           img.decoding = 'async';
           img.src = src;
           img.className = f.recorte ? 'perfil__img perfil__img--recorte' : 'perfil__img';

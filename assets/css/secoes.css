@@ -77,6 +77,9 @@
 /* a foto: recorte sobre um arco com a faixa do MDB */
 .heroi__figura{position:relative;display:none;justify-self:end;width:100%;max-width:500px}
 @media(min-width:1000px){.heroi__figura{display:grid;place-items:end center}}
+/* Celular e tablet: a foto dela entra abaixo do texto. Antes o herói ficava
+   sem rosto justamente na tela em que mais gente chega (13/11/2026). */
+@media(max-width:999px){.heroi__figura{display:grid;place-items:center;justify-self:center;max-width:250px;margin:26px auto 0}}
 .heroi__aura{
   position:absolute;left:50%;top:6%;transform:translateX(-50%);
   width:108%;aspect-ratio:1;border-radius:50%;
